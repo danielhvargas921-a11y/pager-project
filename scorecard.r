@@ -38,7 +38,7 @@ metrics_improperfraud <- c(
 # ---------------- helpers ----------------
 numify <- function(x) as.numeric(gsub("%", "", as.character(x)))
 
-annual_last_month <- function(df, year, range, metrics) {
+annual_last_month <- function(df, year, range, metrics, state = "US") {
   target_date <- if (range == "Jul-Jun") {
     as.Date(paste0(year, "-06-01"))
   } else {
@@ -46,7 +46,7 @@ annual_last_month <- function(df, year, range, metrics) {
   }
 
   df_sub <- df %>%
-    filter(State == "US", format(Date, "%Y-%m") == format(target_date, "%Y-%m"))
+    filter(State == state, format(Date, "%Y-%m") == format(target_date, "%Y-%m"))
 
   if (nrow(df_sub) == 0) {
     return(NULL)
@@ -57,22 +57,18 @@ annual_last_month <- function(df, year, range, metrics) {
   as.numeric(vals[1, ])
 }
 
-annual_multi_year <- function(df, base_year, range, metrics, n_years = 6) {
+annual_multi_year <- function(df, base_year, range, metrics, state = "US", n_years = 6) {
   years <- (base_year - (n_years - 1)):base_year
 
   results <- lapply(years, function(y) {
-    v <- annual_last_month(df, y, range, metrics)
-    if (is.null(v)) {
-      return(NULL)
-    }
+    v <- annual_last_month(df, y, range, metrics, state = state)
+    if (is.null(v)) return(NULL)
     setNames(as.list(v), metrics)
   })
 
   names(results) <- years
   results <- Filter(Negate(is.null), results)
-  if (length(results) == 0) {
-    return(NULL)
-  }
+  if (length(results) == 0) return(NULL)
 
   out <- bind_rows(results, .id = "Year")
   out$Year <- as.integer(out$Year)
@@ -81,142 +77,150 @@ annual_multi_year <- function(df, base_year, range, metrics, n_years = 6) {
 
 # ---------------- Build ALLDATA ----------------
 all_years <- c(2024, 2025)
+all_states <- unique(df_raw$State)
 all_data <- list()
 
-for (y in all_years) {
-  # --- PIE/TABLE ---
-  vals <- annual_last_month(df_raw, y, year_range, metrics_for_pie)
-  if (is.null(vals)) next
-  total <- sum(vals, na.rm = TRUE)
-  proportions <- round(100 * vals / total, 1)
+for (st in all_states) {
+  state_list <- list()
+  
+  for (y in all_years) {
+    # --- PIE/TABLE ---
+    vals <- annual_last_month(df_raw, y, year_range, metrics_for_pie, state = st)
+    if (is.null(vals)) next
+    total <- sum(vals, na.rm = TRUE)
+    proportions <- round(100 * vals / total, 1)
 
-  prev_vals <- annual_last_month(df_raw, y - 1, year_range, metrics_for_pie)
-  prev_prop <- if (!is.null(prev_vals)) round(100 * prev_vals / sum(prev_vals, na.rm = TRUE), 1) else rep(NA_real_, length(metrics_for_pie))
+    prev_vals <- annual_last_month(df_raw, y - 1, year_range, metrics_for_pie, state = st)
+    prev_prop <- if (!is.null(prev_vals)) round(100 * prev_vals / sum(prev_vals, na.rm = TRUE), 1) else rep(NA_real_, length(metrics_for_pie))
 
-  rel <- round(as.numeric(proportions) - as.numeric(prev_prop), 1)
+    rel <- round(as.numeric(proportions) - as.numeric(prev_prop), 1)
+    rel[is.na(rel)] <- NA_real_
 
-  rel[is.na(rel)] <- NA_real_
+    table_df <- data.frame(
+      Metric = metrics_for_pie,
+      Current = as.numeric(proportions),
+      Previous = as.numeric(prev_prop),
+      RelativeChange = rel,
+      check.names = FALSE
+    )
 
-  table_df <- data.frame(
-  Metric = metrics_for_pie,
-  Current = as.numeric(proportions),
-  Previous = as.numeric(prev_prop),
-  RelativeChange = rel,
-  check.names = FALSE
-)
+    # --- BENEFIT TABLE ---
+    benefit_table_df <- NULL
 
-# --- BENEFIT TABLE ---
-benefit_table_df <- NULL
-
-# Timeliness metrics
-t_vals <- annual_last_month(df_raw, y, year_range, metrics_timeliness)
-prev_t_vals <- annual_last_month(df_raw, y - 1, year_range, metrics_timeliness)
-if (!is.null(t_vals)) {
-  t_prev <- if (!is.null(prev_t_vals)) prev_t_vals else rep(NA_real_, length(metrics_timeliness))
-  t_rel <- round(as.numeric(t_vals) - as.numeric(t_prev), 1)
-  t_df <- data.frame(
-    Metric = metrics_timeliness,
-    Current = as.numeric(t_vals),
-    Previous = as.numeric(t_prev),
-    RelativeChange = t_rel,
-    check.names = FALSE
-  )
-  benefit_table_df <- rbind(benefit_table_df, t_df)
-}
-
-# Nonmonetary Determination
-nm_vals <- annual_last_month(df_raw, y, year_range, "Nonmonetary Determination")
-prev_nm_vals <- annual_last_month(df_raw, y - 1, year_range, "Nonmonetary Determination")
-if (!is.null(nm_vals)) {
-  nm_prev <- if (!is.null(prev_nm_vals)) prev_nm_vals else NA_real_
-  nm_rel <- round(as.numeric(nm_vals) - as.numeric(nm_prev), 1)
-  nm_df <- data.frame(
-    Metric = "Nonmonetary Determination",
-    Current = as.numeric(nm_vals),
-    Previous = as.numeric(nm_prev),
-    RelativeChange = nm_rel,
-    check.names = FALSE
-  )
-  benefit_table_df <- rbind(benefit_table_df, nm_df)
-}
-
-
-
-  # --- BUMP/TOP-5 ---
-  counts_df <- annual_multi_year(df_raw, y, year_range, metrics_for_pie, n_years = 6)
-  if (is.null(counts_df)) next
-  row_totals <- rowSums(counts_df[, metrics_for_pie], na.rm = TRUE)
-  prop_df <- as.data.frame(round(100 * sweep(counts_df[, metrics_for_pie], 1, row_totals, "/"), 1))
-  prop_df$Year <- counts_df$Year
-
-  base_row_idx <- which(prop_df$Year == y)
-  base_vals_p <- as.numeric(prop_df[base_row_idx, metrics_for_pie])
-  names(base_vals_p) <- metrics_for_pie
-  top_metrics <- names(sort(base_vals_p, decreasing = TRUE))[1:5]
-
-  series_list <- lapply(top_metrics, function(m) {
-    list(name = m, values = as.numeric(prop_df[[m]]))
-  })
-
-  bump_data <- list(
-    years = as.numeric(prop_df$Year),
-    series = series_list
-  )
-
-  # --- TIMELINESS ---
-  t_vals <- annual_last_month(df_raw, y, year_range, metrics_timeliness)
-  if (!is.null(t_vals)) {
-    multi_t <- annual_multi_year(df_raw, y, year_range, metrics_timeliness, n_years = 6)
-    t_series <- lapply(metrics_timeliness, function(m) {
-      list(name = m, values = as.numeric(multi_t[[m]]))
-    })
-    timeliness_data <- list(years = as.numeric(multi_t$Year), series = t_series)
-  } else {
-    timeliness_data <- NULL
-  }
-
-  # --- NONMONETARY Determination ---
-  nm_vals <- annual_last_month(df_raw, y, year_range, "Nonmonetary Determination")
-  if (!is.null(nm_vals)) {
-    multi_nm <- annual_multi_year(df_raw, y, year_range, "Nonmonetary Determination", n_years = 6)
-    nm_series <- list(list(name = "Nonmonetary Determination", values = as.numeric(multi_nm[["Nonmonetary Determination"]])))
-    nm_data <- list(years = as.numeric(multi_nm$Year), series = nm_series)
-  } else {
-    nm_data <- NULL
-  }
-
-  # --- IMPROPER/FRAUD ---
-  if (all(metrics_improperfraud %in% names(df_raw))) {
-    if_vals <- annual_last_month(df_raw, y, year_range, metrics_improperfraud)
-    if (!is.null(if_vals)) {
-      multi_if <- annual_multi_year(df_raw, y, year_range, metrics_improperfraud, n_years = 6)
-      if_series <- lapply(metrics_improperfraud, function(m) {
-        list(name = m, values = as.numeric(multi_if[[m]]))
-      })
-      improperfraud_data <- list(years = as.numeric(multi_if$Year), series = if_series)
-    } else {
-      improperfraud_data <- NULL
+    # Timeliness
+    t_vals <- annual_last_month(df_raw, y, year_range, metrics_timeliness, state = st)
+    prev_t_vals <- annual_last_month(df_raw, y - 1, year_range, metrics_timeliness, state = st)
+    if (!is.null(t_vals)) {
+      t_prev <- if (!is.null(prev_t_vals)) prev_t_vals else rep(NA_real_, length(metrics_timeliness))
+      t_rel <- round(as.numeric(t_vals) - as.numeric(t_prev), 1)
+      t_df <- data.frame(
+        Metric = metrics_timeliness,
+        Current = as.numeric(t_vals),
+        Previous = as.numeric(t_prev),
+        RelativeChange = t_rel,
+        check.names = FALSE
+      )
+      benefit_table_df <- rbind(benefit_table_df, t_df)
     }
-  } else {
-    improperfraud_data <- NULL
-  }
 
-  # assemble
-  all_data[[as.character(y)]] <- list(
-    pie = as.list(setNames(proportions, metrics_for_pie)),
-    table_program = table_df,
-    table_benefit = benefit_table_df,
-    bump = bump_data,
-    timeliness = timeliness_data,
-    improperfraud = improperfraud_data,
-    nonmonetary = nm_data
-  )
+    # Nonmonetary
+    nm_vals <- annual_last_month(df_raw, y, year_range, "Nonmonetary Determination", state = st)
+    prev_nm_vals <- annual_last_month(df_raw, y - 1, year_range, "Nonmonetary Determination", state = st)
+    if (!is.null(nm_vals)) {
+      nm_prev <- if (!is.null(prev_nm_vals)) prev_nm_vals else NA_real_
+      nm_rel <- round(as.numeric(nm_vals) - as.numeric(nm_prev), 1)
+      nm_df <- data.frame(
+        Metric = "Nonmonetary Determination",
+        Current = as.numeric(nm_vals),
+        Previous = as.numeric(nm_prev),
+        RelativeChange = nm_rel,
+        check.names = FALSE
+      )
+      benefit_table_df <- rbind(benefit_table_df, nm_df)
+    }
+
+    # --- BUMP/TOP-5 ---
+    counts_df <- annual_multi_year(df_raw, y, year_range, metrics_for_pie, state = st, n_years = 6)
+    bump_data <- NULL
+    if (!is.null(counts_df)) {
+      row_totals <- rowSums(counts_df[, metrics_for_pie], na.rm = TRUE)
+      prop_df <- as.data.frame(round(100 * sweep(counts_df[, metrics_for_pie], 1, row_totals, "/"), 1))
+      prop_df$Year <- counts_df$Year
+
+      base_row_idx <- which(prop_df$Year == y)
+      base_vals_p <- as.numeric(prop_df[base_row_idx, metrics_for_pie])
+      names(base_vals_p) <- metrics_for_pie
+      top_metrics <- names(sort(base_vals_p, decreasing = TRUE))[1:5]
+
+      series_list <- lapply(top_metrics, function(m) {
+        list(name = m, values = as.numeric(prop_df[[m]]))
+      })
+
+      bump_data <- list(
+        years = as.numeric(prop_df$Year),
+        series = series_list
+      )
+    }
+
+    # --- TIMELINESS ---
+    timeliness_data <- NULL
+    if (!is.null(t_vals)) {
+      multi_t <- annual_multi_year(df_raw, y, year_range, metrics_timeliness, state = st, n_years = 6)
+      t_series <- lapply(metrics_timeliness, function(m) {
+        list(name = m, values = as.numeric(multi_t[[m]]))
+      })
+      timeliness_data <- list(years = as.numeric(multi_t$Year), series = t_series)
+    }
+
+    # --- NONMONETARY ---
+    nm_data <- NULL
+    if (!is.null(nm_vals)) {
+      multi_nm <- annual_multi_year(df_raw, y, year_range, "Nonmonetary Determination", state = st, n_years = 6)
+      nm_series <- list(list(name = "Nonmonetary Determination", values = as.numeric(multi_nm[["Nonmonetary Determination"]])))
+      nm_data <- list(years = as.numeric(multi_nm$Year), series = nm_series)
+    }
+
+    # --- IMPROPER/FRAUD ---
+    improperfraud_data <- NULL
+    if (all(metrics_improperfraud %in% names(df_raw))) {
+      if_vals <- annual_last_month(df_raw, y, year_range, metrics_improperfraud, state = st)
+      if (!is.null(if_vals)) {
+        multi_if <- annual_multi_year(df_raw, y, year_range, metrics_improperfraud, state = st, n_years = 6)
+        if_series <- lapply(metrics_improperfraud, function(m) {
+          list(name = m, values = as.numeric(multi_if[[m]]))
+        })
+        improperfraud_data <- list(years = as.numeric(multi_if$Year), series = if_series)
+      }
+    }
+
+    # assemble per year
+    state_list[[as.character(y)]] <- list(
+      pie = as.list(setNames(proportions, metrics_for_pie)),
+      table_program = table_df,
+      table_benefit = benefit_table_df,
+      bump = bump_data,
+      timeliness = timeliness_data,
+      improperfraud = improperfraud_data,
+      nonmonetary = nm_data
+    )
+  }
+  
+  # attach to main list
+  all_data[[st]] <- state_list
 }
 
 # ---------------- Export JS ----------------
 alldata_js <- paste0(
   "<script>\nvar ALLDATA = ",
   jsonlite::toJSON(all_data, dataframe = "rows", auto_unbox = TRUE, pretty = TRUE),
+  ";\n</script>\n"
+)
+
+# ---------------- Export STATE_CODES ----------------
+state_list <- sort(unique(df_raw$State))
+states_js <- paste0(
+  "<script>\nvar STATE_CODES = ",
+  jsonlite::toJSON(state_list, auto_unbox = TRUE, pretty = FALSE),
   ";\n</script>\n"
 )
 
@@ -258,10 +262,9 @@ final_html <- template |>
   gsub("<!--INLINE_CSS-->", css_code, x = _, fixed = TRUE) |>
   gsub("<!--INLINE_JS-->", js_code, x = _, fixed = TRUE) |>
   gsub("<!--TIMESERIES_JS-->", alldata_js, x = _, fixed = TRUE) |>
+  gsub("<!--STATE_JS-->", states_js, x = _, fixed = TRUE) |>
   gsub("<!--DATE-->", as.character(today), x = _, fixed = TRUE) |>
-  gsub("<!--YEAR_RANGE_TEXT-->", year_range, x = _, fixed = TRUE) |>   # <—
   gsub("<!--METRIC_SECTIONS-->", section_html, x = _, fixed = TRUE)
-
 
 outfile <- file.path(base_path, glue("pie_report_{today}.html"))
 writeLines(enc2utf8(final_html), outfile, useBytes = TRUE)

@@ -1,6 +1,7 @@
 let charts = {};
 let currentBaseYear = null;
 let currentCategory = "program";
+let currentState = "US";
 
 const metricColors = {
   "Work Search": "#3b8ee2",
@@ -333,35 +334,94 @@ function renderCategorySelector(containerId) {
   });
 }
 
+function renderStateSelector(containerId, stateCodes, defaultState = "US") {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const select = document.createElement("select");
+  select.className = "form-select form-select-sm";
+  select.id = "stateDropdown";
+
+  stateCodes.forEach((code) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = code; // Use abbreviations only
+    if (code === defaultState) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  container.innerHTML = "";
+  container.appendChild(select);
+
+  select.addEventListener("change", () => {
+    currentState = select.value;
+    updateDashboard(currentBaseYear, currentCategory, currentState);
+  });
+}
+
+// ------------------- State / National Toggle -------------------
+function setupScopeToggle() {
+  const nationalBtn = document.getElementById("btnNational");
+  const stateBtn = document.getElementById("btnState");
+  const stateSelector = document.getElementById("state_selector");
+
+  // Default = National
+  nationalBtn.classList.add("active");
+  stateSelector.style.display = "none";
+
+  nationalBtn.addEventListener("click", () => {
+    nationalBtn.classList.add("active");
+    stateBtn.classList.remove("active");
+    stateSelector.style.display = "none";
+    currentState = "US"; // National view
+    updateDashboard(currentBaseYear, currentCategory, currentState);
+  });
+
+  stateBtn.addEventListener("click", () => {
+    stateBtn.classList.add("active");
+    nationalBtn.classList.remove("active");
+    stateSelector.style.display = "block";
+    // Trigger refresh with currently selected state
+    const selected = document.getElementById("stateDropdown").value;
+    currentState = selected;
+    updateDashboard(currentBaseYear, currentCategory, currentState);
+  });
+}
+
 // ------------------- Dashboard -------------------
-function updateDashboard(baseYear, category) {
-  if (!ALLDATA[baseYear]) return;
+function updateDashboard(baseYear, category, stateCode = "US") {
+  if (!ALLDATA[stateCode] || !ALLDATA[stateCode][baseYear]) return;
+
   baseYear = parseInt(baseYear, 10);
   currentBaseYear = baseYear;
+  currentState = stateCode;
+
+  const stateData = ALLDATA[stateCode][baseYear];
 
   // --- Update page title dynamically (using HTML entity for em dash) ---
   const catLabel =
     category === "program" ? "Program Integrity Measures" : "Benefit Measures";
   document.getElementById(
     "reportTitle"
-  ).innerHTML = `UI Overpayments Report &mdash; ${baseYear} (${catLabel})`;
+  ).innerHTML = `UI Overpayments Report &mdash; ${baseYear} (${catLabel}, ${stateCode})`;
 
   // --- Pie data ---
-  const pieData = Object.entries(ALLDATA[baseYear].pie || {}).map(
-    ([name, value]) => ({ name, value })
-  );
+  const pieData = Object.entries(stateData.pie || {}).map(([name, value]) => ({
+    name,
+    value,
+  }));
 
   // Update table depending on category
   if (category === "program") {
     renderComparisonTable(
       "comparison_table_container",
-      ALLDATA[baseYear].table_program || [],
+      stateData.table_program || [],
       baseYear
     );
   } else if (category === "benefit") {
     renderComparisonTable(
       "comparison_table_container",
-      ALLDATA[baseYear].table_benefit || [],
+      stateData.table_benefit || [],
       baseYear
     );
   }
@@ -391,12 +451,12 @@ function updateDashboard(baseYear, category) {
 
     renderPieChart("pie_chart_container", pieData);
 
-    if (ALLDATA[baseYear].bump) {
+    if (stateData.bump) {
       const bumpData = {
         years: yearsRange,
-        series: ALLDATA[baseYear].bump.series.map((s) => {
+        series: stateData.bump.series.map((s) => {
           const values = yearsRange.map((yr) => {
-            const idx = ALLDATA[baseYear].bump.years.indexOf(yr);
+            const idx = stateData.bump.years.indexOf(yr);
             return idx !== -1 ? s.values[idx] : null;
           });
           return { ...s, values };
@@ -405,12 +465,12 @@ function updateDashboard(baseYear, category) {
       renderBumpChart("bump_chart_container", bumpData);
     }
 
-    if (ALLDATA[baseYear].improperfraud) {
+    if (stateData.improperfraud) {
       const ifData = {
         years: yearsRange,
-        series: ALLDATA[baseYear].improperfraud.series.map((s) => {
+        series: stateData.improperfraud.series.map((s) => {
           const values = yearsRange.map((yr) => {
-            const idx = ALLDATA[baseYear].improperfraud.years.indexOf(yr);
+            const idx = stateData.improperfraud.years.indexOf(yr);
             return idx !== -1 ? s.values[idx] : null;
           });
           return { ...s, values };
@@ -425,12 +485,12 @@ function updateDashboard(baseYear, category) {
     document.getElementById("nonmonetary_chart_container").style.display =
       "block";
 
-    if (ALLDATA[baseYear].timeliness) {
+    if (stateData.timeliness) {
       const timelinessData = {
         years: yearsRange,
-        series: ALLDATA[baseYear].timeliness.series.map((s) => {
+        series: stateData.timeliness.series.map((s) => {
           const values = yearsRange.map((yr) => {
-            const idx = ALLDATA[baseYear].timeliness.years.indexOf(yr);
+            const idx = stateData.timeliness.years.indexOf(yr);
             return idx !== -1 ? s.values[idx] : null;
           });
           return { ...s, values };
@@ -439,12 +499,12 @@ function updateDashboard(baseYear, category) {
       renderTimelinessChart("timeliness_chart_container", timelinessData);
     }
 
-    if (ALLDATA[baseYear].nonmonetary) {
+    if (stateData.nonmonetary) {
       const nonmonetaryData = {
         years: yearsRange,
-        series: ALLDATA[baseYear].nonmonetary.series.map((s) => {
+        series: stateData.nonmonetary.series.map((s) => {
           const values = yearsRange.map((yr) => {
-            const idx = ALLDATA[baseYear].nonmonetary.years.indexOf(yr);
+            const idx = stateData.nonmonetary.years.indexOf(yr);
             return idx !== -1 ? s.values[idx] : null;
           });
           return { ...s, values };
@@ -457,7 +517,8 @@ function updateDashboard(baseYear, category) {
 
 // ------------------- Init -------------------
 document.addEventListener("DOMContentLoaded", () => {
-  const years = Object.keys(ALLDATA)
+  // Assume ALLDATA has structure ALLDATA[stateCode][year]
+  const years = Object.keys(ALLDATA["US"])
     .map((y) => parseInt(y))
     .sort((a, b) => b - a);
   const defaultYear = years[0];
@@ -465,7 +526,12 @@ document.addEventListener("DOMContentLoaded", () => {
   renderBaseYearSelector("base_year_selector", years, defaultYear);
   renderCategorySelector("category_selector");
 
-  updateDashboard(defaultYear, currentCategory);
+  // Pass in state abbreviations from R script (like ["US","VA","CA",...])
+  renderStateSelector("state_selector", STATE_CODES, "US");
+
+  setupScopeToggle();
+
+  updateDashboard(defaultYear, currentCategory, currentState);
 
   const toggle = document.getElementById("viewToggle");
   toggle.addEventListener("click", (e) => {
@@ -474,7 +540,6 @@ document.addEventListener("DOMContentLoaded", () => {
         .querySelectorAll(".toggle-option")
         .forEach((btn) => btn.classList.remove("active"));
       e.target.classList.add("active");
-
       switchView(e.target.getAttribute("data-view"));
     }
   });
@@ -485,20 +550,22 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function switchView(view) {
-  if (!currentBaseYear) return;
+  if (!currentBaseYear || !currentState) return;
 
   if (view === "plots") {
     document.getElementById("plots-view").style.display = "block";
     document.getElementById("table-view").style.display = "none";
-    updateDashboard(currentBaseYear, currentCategory);
+    updateDashboard(currentBaseYear, currentCategory, currentState);
   } else {
     document.getElementById("plots-view").style.display = "none";
     document.getElementById("table-view").style.display = "block";
 
+    const stateData = ALLDATA[currentState][currentBaseYear];
+
     const tableData =
       currentCategory === "program"
-        ? ALLDATA[currentBaseYear].table_program
-        : ALLDATA[currentBaseYear].table_benefit;
+        ? stateData.table_program
+        : stateData.table_benefit;
 
     renderComparisonTable(
       "comparison_table_container",

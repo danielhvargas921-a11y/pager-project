@@ -21,6 +21,21 @@
     <!-- Sidebar -->
     <div id="sidebar" class="bg-dark text-white p-3">
       <h4 class="mb-3">U.S. Department of Labor</h4>
+
+      <!-- Mode toggle -->
+      <div class="sidebar-mode-toggle mt-3">
+        <button id="btnNational" class="sidebar-toggle-btn active">
+          National
+        </button>
+        <button id="btnState" class="sidebar-toggle-btn">State</button>
+        <div id="state_selector" class="mt-2" style="display: none">
+          <select
+            id="stateDropdown"
+            class="form-select form-select-sm"
+          ></select>
+        </div>
+      </div>
+
       <div class="mt-3">
         Last updated:
         <!--DATE-->
@@ -67,6 +82,7 @@
     </div>
 
     <!--TIMESERIES_JS-->
+    <!--STATE_JS-->
     <!--INLINE_JS-->
   </body>
 </html>
