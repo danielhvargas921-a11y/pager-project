@@ -222,33 +222,43 @@ function renderComparisonTable(containerId, tableData, baseYear) {
   tableData.sort((a, b) => b.Current - a.Current);
 
   const rows = tableData
-    .map(
-      (row, idx) => `
+    .map((row, idx) => {
+      // Ensure safe text for each field
+      const currTxt =
+        row.Current != null && !isNaN(row.Current) ? `${row.Current}%` : "NA";
+      const prevTxt =
+        row.Previous != null && !isNaN(row.Previous)
+          ? `${row.Previous}%`
+          : "NA";
+      const rel =
+        row.RelativeChange != null && !isNaN(row.RelativeChange)
+          ? `${row.RelativeChange > 0 ? "+" : ""}${row.RelativeChange}%`
+          : "NA";
+
+      return `
 <tr class="fade-in" style="animation-delay:${idx * 0.3}s">
-<td>${row.Metric}</td>
-<td>${row.Current}%</td>
-<td>${row.Previous ? row.Previous + "%" : "NA"}</td>
-<td>${row.RelativeChange > 0 ? "+" : ""}${row.RelativeChange}%</td>
-</tr>
-`
-    )
+  <td>${row.Metric}</td>
+  <td>${currTxt}</td>
+  <td>${prevTxt}</td>
+  <td>${rel}</td>
+</tr>`;
+    })
     .join("");
 
   container.innerHTML = `
 <div class="table-responsive">
-<table class="table table-bordered table-sm text-center align-middle comparison-table">
-<thead>
-<tr>
-<th>Metric</th>
-<th>% of Overpayments (${baseYear} PIIA)</th>
-<th>% of Overpayments (${baseYear - 1} PIIA)</th>
-<th>Relative Change</th>
-</tr>
-</thead>
-<tbody>${rows}</tbody>
-</table>
-</div>
-`;
+  <table class="table table-bordered table-sm text-center align-middle comparison-table">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th>% of Overpayments (${baseYear} PIIA)</th>
+        <th>% of Overpayments (${baseYear - 1} PIIA)</th>
+        <th>Relative Change</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+</div>`;
 }
 
 // ------------------- Selectors -------------------
@@ -307,26 +317,32 @@ function updateDashboard(baseYear, category) {
   baseYear = parseInt(baseYear, 10);
   currentBaseYear = baseYear;
 
-  const pieData = Object.entries(ALLDATA[baseYear].pie).map(
-    ([name, value]) => ({
-      name,
-      value,
-    })
+  // --- Update page title dynamically (using HTML entity for em dash) ---
+  const catLabel =
+    category === "program" ? "Program Integrity Measures" : "Benefit Measures";
+  document.getElementById(
+    "reportTitle"
+  ).innerHTML = `UI Overpayments Report &mdash; ${baseYear} (${catLabel})`;
+
+  // --- Pie data ---
+  const pieData = Object.entries(ALLDATA[baseYear].pie || {}).map(
+    ([name, value]) => ({ name, value })
   );
 
   // Always update table for Program category
   if (category === "program") {
     renderComparisonTable(
       "comparison_table_container",
-      ALLDATA[baseYear].table,
+      ALLDATA[baseYear].table || [],
       baseYear
     );
   }
 
+  // Build the 6-year window (baseYear - 5 through baseYear)
   const yearsRange = [];
   for (let y = baseYear - 5; y <= baseYear; y++) yearsRange.push(y);
 
-  // Hide all plots initially
+  // Hide all plots first
   [
     "pie_chart_container",
     "bump_chart_container",
@@ -334,10 +350,12 @@ function updateDashboard(baseYear, category) {
     "timeliness_chart_container",
     "nonmonetary_chart_container",
   ].forEach((id) => {
-    document.getElementById(id).style.display = "none";
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
   });
 
   if (category === "program") {
+    // Show program-related charts
     document.getElementById("pie_chart_container").style.display = "block";
     document.getElementById("bump_chart_container").style.display = "block";
     document.getElementById("improperfraud_chart_container").style.display =
@@ -373,6 +391,7 @@ function updateDashboard(baseYear, category) {
       renderImproperFraudChart("improperfraud_chart_container", ifData);
     }
   } else if (category === "benefit") {
+    // Show benefit-related charts
     document.getElementById("timeliness_chart_container").style.display =
       "block";
     document.getElementById("nonmonetary_chart_container").style.display =

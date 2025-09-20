@@ -156,7 +156,8 @@
   height: 400px !important;
 }
 
-#improperfraud_ {
+/* was #improperfraud_ */
+#improperfraud_chart_container {
   height: 350px !important;
 }
 

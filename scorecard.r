@@ -6,11 +6,11 @@ if (!requireNamespace("lubridate", quietly = TRUE)) install.packages("lubridate"
 library(glue)
 library(jsonlite)
 library(dplyr)
-library(lubridate) #obunga 
+library(lubridate) 
 
 # ---------------- Hardcoded Values ----------------
 year_range <- "Jul-Jun"
-base_path <- "C:/Users/Vargas.Daniel.H/Desktop/SCORE CARD PROJECT/main/scorecard"
+base_path <- "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
 
 f <- file.path(base_path, "scorecard_data.csv")
 df_raw <- read.csv(f, stringsAsFactors = FALSE, header = TRUE, check.names = FALSE)
@@ -93,13 +93,18 @@ for (y in all_years) {
   prev_vals <- annual_last_month(df_raw, y - 1, year_range, metrics_for_pie)
   prev_prop <- if (!is.null(prev_vals)) round(100 * prev_vals / sum(prev_vals, na.rm = TRUE), 1) else rep(NA_real_, length(metrics_for_pie))
 
+  rel <- round(as.numeric(proportions) - as.numeric(prev_prop), 1)
+
+  rel[is.na(rel)] <- NA_real_
+  
   table_df <- data.frame(
-    Metric = metrics_for_pie,
-    Current = as.numeric(proportions),
-    Previous = as.numeric(prev_prop),
-    RelativeChange = round(as.numeric(proportions) - as.numeric(prev_prop), 1),
-    check.names = FALSE
-  )
+  Metric = metrics_for_pie,
+  Current = as.numeric(proportions),
+  Previous = as.numeric(prev_prop),
+  RelativeChange = rel,
+  check.names = FALSE
+)
+
 
   # --- BUMP/TOP-5 ---
   counts_df <- annual_multi_year(df_raw, y, year_range, metrics_for_pie, n_years = 6)
@@ -217,7 +222,9 @@ final_html <- template |>
   gsub("<!--INLINE_JS-->", js_code, x = _, fixed = TRUE) |>
   gsub("<!--TIMESERIES_JS-->", alldata_js, x = _, fixed = TRUE) |>
   gsub("<!--DATE-->", as.character(today), x = _, fixed = TRUE) |>
+  gsub("<!--YEAR_RANGE_TEXT-->", year_range, x = _, fixed = TRUE) |>   # <—
   gsub("<!--METRIC_SECTIONS-->", section_html, x = _, fixed = TRUE)
+
 
 outfile <- file.path(base_path, glue("pie_report_{today}.html"))
 writeLines(enc2utf8(final_html), outfile, useBytes = TRUE)
