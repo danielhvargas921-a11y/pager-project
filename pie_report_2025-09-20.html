@@ -549,8 +549,11 @@ const metricColors = {
   "Base Period Wages": "#ffd23b",
   "Other Eligibility Issues": "#c15fcf",
   "All Other Causes": "#ff7b93",
-  "Improper Payment Rate": "#1f77b4",
-  "Fraud Rate": "#ff7f0e",
+  "Improper Payment Rate": "#1f77b4", // blue
+  "Fraud Rate": "#ff7f0e", // orange
+  "First Payment Timeliness (14 days)": "#2a9d8f",
+  "First Payment Timeliness (21 days)": "#e76f51",
+  "Nonmonetary Determination": "#9467bd", // purple
 };
 
 // ------------------- Chart Renderers -------------------
@@ -618,24 +621,30 @@ function renderBumpChart(containerId, bumpData) {
 }
 
 function renderTimelinessChart(containerId, data) {
-  let chartDom = document.getElementById(containerId);
+  const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  let chart = echarts.init(chartDom);
+  const chart = echarts.init(chartDom);
 
   const years = data.years;
+  const alpThreshold = 87;
+
   const seriesList = data.series.map((s) => ({
     name: s.name.replace("First Payment Timeliness", "FPT"),
     type: "line",
     smooth: true,
     symbolSize: 8,
     emphasis: { focus: "series" },
-    lineStyle: { width: 3, color: metricColors[s.name] || undefined },
-    itemStyle: { color: metricColors[s.name] || undefined },
-    data: s.values,
+    lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
+    data: s.values.map((v) => ({
+      value: v,
+      itemStyle: {
+        color: v >= alpThreshold ? "#2a9d8f" : "#e63946", // green if above line, red if below
+      },
+    })),
   }));
 
-  let option = {
+  const option = {
     title: { text: "First Payment Timeliness (FPT)", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
@@ -646,16 +655,16 @@ function renderTimelinessChart(containerId, data) {
       name: "Percent",
       axisLabel: { formatter: "{value}%" },
     },
-    series: seriesList.concat([
+    series: [
       {
         name: "ALP (87%)",
         type: "line",
-        symbol: "none", // no points
+        symbol: "none",
         lineStyle: { type: "dashed", color: "red", width: 2 },
-        itemStyle: { color: "red" },
-        data: years.map(() => 87),
+        data: years.map(() => alpThreshold),
       },
-    ]),
+      ...seriesList,
+    ],
   };
 
   chart.setOption(option);
@@ -663,12 +672,14 @@ function renderTimelinessChart(containerId, data) {
 }
 
 function renderNonmonetaryChart(containerId, data) {
-  let chartDom = document.getElementById(containerId);
+  const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  let chart = echarts.init(chartDom);
+  const chart = echarts.init(chartDom);
 
   const years = data.years;
+  const alpThreshold = 80;
+
   const seriesList = data.series.map((s) => ({
     name: s.name,
     type: "line",
@@ -676,21 +687,15 @@ function renderNonmonetaryChart(containerId, data) {
     symbolSize: 8,
     emphasis: { focus: "series" },
     lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
-    itemStyle: { color: metricColors[s.name] || "#999" },
-    data: s.values,
+    data: s.values.map((v) => ({
+      value: v,
+      itemStyle: {
+        color: v >= alpThreshold ? "#2a9d8f" : "#e63946", // green if above line, red if below
+      },
+    })),
   }));
 
-  // Add ALP reference line
-  seriesList.push({
-    name: "ALP (80%)",
-    type: "line",
-    symbol: "none", // no points
-    lineStyle: { type: "dashed", color: "red", width: 2 },
-    itemStyle: { color: "red" },
-    data: years.map(() => 80),
-  });
-
-  let option = {
+  const option = {
     title: { text: "Nonmonetary Determination", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
@@ -701,7 +706,16 @@ function renderNonmonetaryChart(containerId, data) {
       name: "Percent",
       axisLabel: { formatter: "{value}%" },
     },
-    series: seriesList,
+    series: [
+      {
+        name: "ALP (80%)",
+        type: "line",
+        symbol: "none",
+        lineStyle: { type: "dashed", color: "red", width: 2 },
+        data: years.map(() => alpThreshold),
+      },
+      ...seriesList,
+    ],
   };
 
   chart.setOption(option);
