@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>UI Overpayments Report</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+/* Sidebar styling */
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: #0a2239;
+  color: white;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Main panel styling */
+#main-content {
+  margin-left: 270px;
+  padding: 20px;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Sections (report page style) */
+.section {
+  margin: 40px auto;
+  width: 95%;
+  max-width: 1100px;
+  background: #fff;
+  border: 1px solid #dee2e6; /* single clean border */
+  border-radius: 8px;
+  padding: 40px 50px;
+}
+
+/* Larger screens */
+@media (min-width: 1600px) {
+  .section {
+    max-width: 1200px;
+  }
+}
+
+/* Small laptops/tablets */
+@media (max-width: 992px) {
+  .section {
+    width: 100%;
+    padding: 20px;
+  }
+}
+
+.section h3 {
+  font-weight: 600;
+  color: #0a2239;
+}
+
+/* Chart containers */
+.chart-container {
+  width: 100% !important;
+  height: 340px !important;
+  margin: 0 auto 30px auto;
+  background-color: transparent; /* no extra boxes */
+}
+
+.chart-small {
+  height: 300px !important;
+}
+
+/* Table styling */
+.comparison-table th {
+  background-color: #0a2239 !important;
+  color: #fff !important;
+  font-weight: 600;
+  text-align: center;
+}
+
+.comparison-table td {
+  vertical-align: middle;
+  padding: 8px;
+}
+
+.comparison-table tbody tr:nth-child(even) td {
+  background-color: #f2f6fa;
+}
+
+.comparison-table tbody tr:hover td {
+  background-color: #e6eef5;
+}
+
+.comparison-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.comparison-table td:not(:first-child) {
+  text-align: center;
+}
+
+/* Pill toggle styling */
+.toggle-pill {
+  display: inline-flex;
+  border-radius: 50px;
+  background: #e0e0e0;
+  padding: 3px;
+}
+
+.toggle-option {
+  border: none;
+  background: transparent;
+  padding: 6px 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: #0a2239;
+}
+
+.toggle-option:hover {
+  background: #d0d0d0;
+}
+
+.toggle-option.active {
+  background: #0a2239;
+  color: #fff;
+}
+
+.fade-in {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.3s forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Divider lines between figures */
+.section-break {
+  border: 0;
+  border-top: 4px solid #adb5bd;
+  margin: 1rem 0;
+}
+
+/* Side-by-side chart row styling */
+.chart-row {
+  display: flex;
+  gap: 10px;
+}
+
+.chart-row .chart-container {
+  flex: 1;
+  height: 360px !important;
+}
+
+#bump_chart_container {
+  height: 400px !important;
+}
+
+#timeliness_chart_container,
+#improperfraud_chart_container {
+  height: 300px !important;
+}
+</style>
+    <style>
+      /* ensures room for toggle */
+      .section-header {
+        min-height: 44px;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+    <!-- Sidebar -->
+    <div id="sidebar" class="bg-dark text-white p-3">
+      <h4 class="mb-3">U.S. Department of Labor</h4>
+      <div class="mt-3">
+        Last updated:
+        2025-09-19
+      </div>
+      <div class="mt-3">
+        <strong>Select Base Year:</strong><br />
+        <div id="base_year_selector"></div>
+      </div>
+      <div class="mt-3">
+        <strong>Reporting Period:</strong><br />
+        <!--YEAR_RANGE_TEXT-->
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div id="main-content" class="p-4">
+      <!-- Section wrapper -->
+      <div class="section">
+        <!-- Title + toggle row -->
+        <div
+          class="section-header d-flex align-items-center mb-3 position-relative"
+        >
+          <h3 id="reportHeader" class="m-0 w-100 text-center">
+            UI Overpayments Report
+          </h3>
+          <div
+            class="toggle-pill position-absolute end-0 top-50 translate-middle-y"
+            id="viewToggle"
+          >
+            <button class="toggle-option active" data-view="plots">
+              Plots
+            </button>
+            <button class="toggle-option" data-view="table">Table</button>
+          </div>
+        </div>
+
+        <!-- Injected sections (from R) -->
+        <div class="section bg-white shadow-sm rounded metric-section" id="section_dashboard">
+
+  <!-- Plots view -->
+  <div id="plots-view">
+
+    <!-- Root Causes Pie + Top 5 -->
+    <div>
+      <div id="pie_chart_container" class="chart-container chart-small"></div>
+
+      <div id="bump_chart_container" class="chart-container"></div>
+    </div>
+
+    <!-- Compact break -->
+    <hr class="section-break" />
+
+    <!-- Payment Timeliness + Improper/Fraud side by side -->
+    <div class="row">
+      <div class="col-md-6">
+        <div id="timeliness_chart_container" class="chart-container"></div>
+      </div>
+      <div class="col-md-6">
+        <div id="improperfraud_chart_container" class="chart-container"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Table view -->
+  <div id="table-view" style="display:none">
+    <div id="comparison_table_container"></div>
+  </div>
+</div>
+      </div>
+    </div>
+
+    <script>
+var ALLDATA = {
+  "2016": {
+    "pie": {
+      "Work Search": 9.9,
+      "Benefit Year Earnings": 28.2,
+      "Separation Issues": 7.3,
+      "Able + Available": 20.3,
+      "Employment Service Registration": 2.5,
+      "Base Period Wages": 12.1,
+      "Other Eligibility Issues": 6.4,
+      "All Other Causes": 13.2
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 9.9
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 28.2
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 7.3
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 20.3
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 2.5
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 12.1
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 6.4
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 13.2
+      }
+    ],
+    "bump": {
+      "years": 2016,
+      "series": [
+        {
+          "name": "Benefit Year Earnings",
+          "values": 28.2
+        },
+        {
+          "name": "Able + Available",
+          "values": 20.3
+        },
+        {
+          "name": "All Other Causes",
+          "values": 13.2
+        },
+        {
+          "name": "Base Period Wages",
+          "values": 12.1
+        },
+        {
+          "name": "Work Search",
+          "values": 9.9
+        }
+      ]
+    },
+    "timeliness": {
+      "years": 2016,
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": 74
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": 66
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": 2016,
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": 14
+        },
+        {
+          "name": "Fraud Rate",
+          "values": 14
+        }
+      ]
+    }
+  },
+  "2017": {
+    "pie": {
+      "Work Search": 13.7,
+      "Benefit Year Earnings": 31.2,
+      "Separation Issues": 17.9,
+      "Able + Available": 8.4,
+      "Employment Service Registration": 14,
+      "Base Period Wages": 7.8,
+      "Other Eligibility Issues": 3.8,
+      "All Other Causes": 3.1
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 13.7,
+        "Previous": 9.9,
+        "RelativeChange": 3.8
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 31.2,
+        "Previous": 28.2,
+        "RelativeChange": 3
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 17.9,
+        "Previous": 7.3,
+        "RelativeChange": 10.6
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 8.4,
+        "Previous": 20.3,
+        "RelativeChange": -11.9
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 14,
+        "Previous": 2.5,
+        "RelativeChange": 11.5
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 7.8,
+        "Previous": 12.1,
+        "RelativeChange": -4.3
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 3.8,
+        "Previous": 6.4,
+        "RelativeChange": -2.6
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 3.1,
+        "Previous": 13.2,
+        "RelativeChange": -10.1
+      }
+    ],
+    "bump": {
+      "years": [2016, 2017],
+      "series": [
+        {
+          "name": "Benefit Year Earnings",
+          "values": [28.2, 31.2]
+        },
+        {
+          "name": "Separation Issues",
+          "values": [7.3, 17.9]
+        },
+        {
+          "name": "Employment Service Registration",
+          "values": [2.5, 14]
+        },
+        {
+          "name": "Work Search",
+          "values": [9.9, 13.7]
+        },
+        {
+          "name": "Able + Available",
+          "values": [20.3, 8.4]
+        }
+      ]
+    },
+    "timeliness": {
+      "years": [2016, 2017],
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": [74, 67]
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": [66, 79]
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": [2016, 2017],
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": [14, 11]
+        },
+        {
+          "name": "Fraud Rate",
+          "values": [14, 11]
+        }
+      ]
+    }
+  },
+  "2018": {
+    "pie": {
+      "Work Search": 5.4,
+      "Benefit Year Earnings": 35.6,
+      "Separation Issues": 9.9,
+      "Able + Available": 12,
+      "Employment Service Registration": 11.7,
+      "Base Period Wages": 3,
+      "Other Eligibility Issues": 5.4,
+      "All Other Causes": 16.8
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 5.4,
+        "Previous": 13.7,
+        "RelativeChange": -8.3
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 35.6,
+        "Previous": 31.2,
+        "RelativeChange": 4.4
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 9.9,
+        "Previous": 17.9,
+        "RelativeChange": -8
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 12,
+        "Previous": 8.4,
+        "RelativeChange": 3.6
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 11.7,
+        "Previous": 14,
+        "RelativeChange": -2.3
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 3,
+        "Previous": 7.8,
+        "RelativeChange": -4.8
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 5.4,
+        "Previous": 3.8,
+        "RelativeChange": 1.6
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 16.8,
+        "Previous": 3.1,
+        "RelativeChange": 13.7
+      }
+    ],
+    "bump": {
+      "years": [2016, 2017, 2018],
+      "series": [
+        {
+          "name": "Benefit Year Earnings",
+          "values": [28.2, 31.2, 35.6]
+        },
+        {
+          "name": "All Other Causes",
+          "values": [13.2, 3.1, 16.8]
+        },
+        {
+          "name": "Able + Available",
+          "values": [20.3, 8.4, 12]
+        },
+        {
+          "name": "Employment Service Registration",
+          "values": [2.5, 14, 11.7]
+        },
+        {
+          "name": "Separation Issues",
+          "values": [7.3, 17.9, 9.9]
+        }
+      ]
+    },
+    "timeliness": {
+      "years": [2016, 2017, 2018],
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": [74, 67, 55]
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": [66, 79, 60]
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": [2016, 2017, 2018],
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": [14, 11, 9]
+        },
+        {
+          "name": "Fraud Rate",
+          "values": [14, 11, 3]
+        }
+      ]
+    }
+  },
+  "2019": {
+    "pie": {
+      "Work Search": 15.5,
+      "Benefit Year Earnings": 9.1,
+      "Separation Issues": 23.6,
+      "Able + Available": 6.2,
+      "Employment Service Registration": 18.1,
+      "Base Period Wages": 17.2,
+      "Other Eligibility Issues": 4.4,
+      "All Other Causes": 5.9
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 15.5,
+        "Previous": 5.4,
+        "RelativeChange": 10.1
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 9.1,
+        "Previous": 35.6,
+        "RelativeChange": -26.5
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 23.6,
+        "Previous": 9.9,
+        "RelativeChange": 13.7
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 6.2,
+        "Previous": 12,
+        "RelativeChange": -5.8
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 18.1,
+        "Previous": 11.7,
+        "RelativeChange": 6.4
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 17.2,
+        "Previous": 3,
+        "RelativeChange": 14.2
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 4.4,
+        "Previous": 5.4,
+        "RelativeChange": -1
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 5.9,
+        "Previous": 16.8,
+        "RelativeChange": -10.9
+      }
+    ],
+    "bump": {
+      "years": [2016, 2017, 2018, 2019],
+      "series": [
+        {
+          "name": "Separation Issues",
+          "values": [7.3, 17.9, 9.9, 23.6]
+        },
+        {
+          "name": "Employment Service Registration",
+          "values": [2.5, 14, 11.7, 18.1]
+        },
+        {
+          "name": "Base Period Wages",
+          "values": [12.1, 7.8, 3, 17.2]
+        },
+        {
+          "name": "Work Search",
+          "values": [9.9, 13.7, 5.4, 15.5]
+        },
+        {
+          "name": "Benefit Year Earnings",
+          "values": [28.2, 31.2, 35.6, 9.1]
+        }
+      ]
+    },
+    "timeliness": {
+      "years": [2016, 2017, 2018, 2019],
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": [74, 67, 55, 51]
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": [66, 79, 60, 72]
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": [2016, 2017, 2018, 2019],
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": [14, 11, 9, 11]
+        },
+        {
+          "name": "Fraud Rate",
+          "values": [14, 11, 3, 18]
+        }
+      ]
+    }
+  },
+  "2020": {
+    "pie": {
+      "Work Search": 5.1,
+      "Benefit Year Earnings": 21.7,
+      "Separation Issues": 28.6,
+      "Able + Available": 7.9,
+      "Employment Service Registration": 4.7,
+      "Base Period Wages": 13.7,
+      "Other Eligibility Issues": 2.8,
+      "All Other Causes": 15.3
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 5.1,
+        "Previous": 15.5,
+        "RelativeChange": -10.4
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 21.7,
+        "Previous": 9.1,
+        "RelativeChange": 12.6
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 28.6,
+        "Previous": 23.6,
+        "RelativeChange": 5
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 7.9,
+        "Previous": 6.2,
+        "RelativeChange": 1.7
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 4.7,
+        "Previous": 18.1,
+        "RelativeChange": -13.4
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 13.7,
+        "Previous": 17.2,
+        "RelativeChange": -3.5
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 2.8,
+        "Previous": 4.4,
+        "RelativeChange": -1.6
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 15.3,
+        "Previous": 5.9,
+        "RelativeChange": 9.4
+      }
+    ],
+    "bump": {
+      "years": [2016, 2017, 2018, 2019, 2020],
+      "series": [
+        {
+          "name": "Separation Issues",
+          "values": [7.3, 17.9, 9.9, 23.6, 28.6]
+        },
+        {
+          "name": "Benefit Year Earnings",
+          "values": [28.2, 31.2, 35.6, 9.1, 21.7]
+        },
+        {
+          "name": "All Other Causes",
+          "values": [13.2, 3.1, 16.8, 5.9, 15.3]
+        },
+        {
+          "name": "Base Period Wages",
+          "values": [12.1, 7.8, 3, 17.2, 13.7]
+        },
+        {
+          "name": "Able + Available",
+          "values": [20.3, 8.4, 12, 6.2, 7.9]
+        }
+      ]
+    },
+    "timeliness": {
+      "years": [2016, 2017, 2018, 2019, 2020],
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": [74, 67, 55, 51, 54]
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": [66, 79, 60, 72, 65]
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": [2016, 2017, 2018, 2019, 2020],
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": [14, 11, 9, 11, 21]
+        },
+        {
+          "name": "Fraud Rate",
+          "values": [14, 11, 3, 18, 10]
+        }
+      ]
+    }
+  },
+  "2021": {
+    "pie": {
+      "Work Search": 8.3,
+      "Benefit Year Earnings": 29.1,
+      "Separation Issues": 26.9,
+      "Able + Available": 5.4,
+      "Employment Service Registration": 3.5,
+      "Base Period Wages": 3.8,
+      "Other Eligibility Issues": 19.7,
+      "All Other Causes": 3.2
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 8.3,
+        "Previous": 5.1,
+        "RelativeChange": 3.2
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 29.1,
+        "Previous": 21.7,
+        "RelativeChange": 7.4
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 26.9,
+        "Previous": 28.6,
+        "RelativeChange": -1.7
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 5.4,
+        "Previous": 7.9,
+        "RelativeChange": -2.5
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 3.5,
+        "Previous": 4.7,
+        "RelativeChange": -1.2
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 3.8,
+        "Previous": 13.7,
+        "RelativeChange": -9.9
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 19.7,
+        "Previous": 2.8,
+        "RelativeChange": 16.9
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 3.2,
+        "Previous": 15.3,
+        "RelativeChange": -12.1
+      }
+    ],
+    "bump": {
+      "years": [2016, 2017, 2018, 2019, 2020, 2021],
+      "series": [
+        {
+          "name": "Benefit Year Earnings",
+          "values": [28.2, 31.2, 35.6, 9.1, 21.7, 29.1]
+        },
+        {
+          "name": "Separation Issues",
+          "values": [7.3, 17.9, 9.9, 23.6, 28.6, 26.9]
+        },
+        {
+          "name": "Other Eligibility Issues",
+          "values": [6.4, 3.8, 5.4, 4.4, 2.8, 19.7]
+        },
+        {
+          "name": "Work Search",
+          "values": [9.9, 13.7, 5.4, 15.5, 5.1, 8.3]
+        },
+        {
+          "name": "Able + Available",
+          "values": [20.3, 8.4, 12, 6.2, 7.9, 5.4]
+        }
+      ]
+    },
+    "timeliness": {
+      "years": [2016, 2017, 2018, 2019, 2020, 2021],
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": [74, 67, 55, 51, 54, 80]
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": [66, 79, 60, 72, 65, 74]
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": [2016, 2017, 2018, 2019, 2020, 2021],
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": [14, 11, 9, 11, 21, 24]
+        },
+        {
+          "name": "Fraud Rate",
+          "values": [14, 11, 3, 18, 10, 12]
+        }
+      ]
+    }
+  },
+  "2022": {
+    "pie": {
+      "Work Search": 22.4,
+      "Benefit Year Earnings": 16.4,
+      "Separation Issues": 11.8,
+      "Able + Available": 6.5,
+      "Employment Service Registration": 16.5,
+      "Base Period Wages": 6.5,
+      "Other Eligibility Issues": 4.5,
+      "All Other Causes": 15.4
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 22.4,
+        "Previous": 8.3,
+        "RelativeChange": 14.1
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 16.4,
+        "Previous": 29.1,
+        "RelativeChange": -12.7
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 11.8,
+        "Previous": 26.9,
+        "RelativeChange": -15.1
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 6.5,
+        "Previous": 5.4,
+        "RelativeChange": 1.1
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 16.5,
+        "Previous": 3.5,
+        "RelativeChange": 13
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 6.5,
+        "Previous": 3.8,
+        "RelativeChange": 2.7
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 4.5,
+        "Previous": 19.7,
+        "RelativeChange": -15.2
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 15.4,
+        "Previous": 3.2,
+        "RelativeChange": 12.2
+      }
+    ],
+    "bump": {
+      "years": [2017, 2018, 2019, 2020, 2021, 2022],
+      "series": [
+        {
+          "name": "Work Search",
+          "values": [13.7, 5.4, 15.5, 5.1, 8.3, 22.4]
+        },
+        {
+          "name": "Employment Service Registration",
+          "values": [14, 11.7, 18.1, 4.7, 3.5, 16.5]
+        },
+        {
+          "name": "Benefit Year Earnings",
+          "values": [31.2, 35.6, 9.1, 21.7, 29.1, 16.4]
+        },
+        {
+          "name": "All Other Causes",
+          "values": [3.1, 16.8, 5.9, 15.3, 3.2, 15.4]
+        },
+        {
+          "name": "Separation Issues",
+          "values": [17.9, 9.9, 23.6, 28.6, 26.9, 11.8]
+        }
+      ]
+    },
+    "timeliness": {
+      "years": [2017, 2018, 2019, 2020, 2021, 2022],
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": [67, 55, 51, 54, 80, 77]
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": [79, 60, 72, 65, 74, 68]
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": [2017, 2018, 2019, 2020, 2021, 2022],
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": [11, 9, 11, 21, 24, 15]
+        },
+        {
+          "name": "Fraud Rate",
+          "values": [11, 3, 18, 10, 12, 24]
+        }
+      ]
+    }
+  },
+  "2023": {
+    "pie": {
+      "Work Search": 25.7,
+      "Benefit Year Earnings": 6.6,
+      "Separation Issues": 6,
+      "Able + Available": 26.6,
+      "Employment Service Registration": 2.9,
+      "Base Period Wages": 9.8,
+      "Other Eligibility Issues": 13.7,
+      "All Other Causes": 8.7
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 25.7,
+        "Previous": 22.4,
+        "RelativeChange": 3.3
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 6.6,
+        "Previous": 16.4,
+        "RelativeChange": -9.8
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 6,
+        "Previous": 11.8,
+        "RelativeChange": -5.8
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 26.6,
+        "Previous": 6.5,
+        "RelativeChange": 20.1
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 2.9,
+        "Previous": 16.5,
+        "RelativeChange": -13.6
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 9.8,
+        "Previous": 6.5,
+        "RelativeChange": 3.3
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 13.7,
+        "Previous": 4.5,
+        "RelativeChange": 9.2
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 8.7,
+        "Previous": 15.4,
+        "RelativeChange": -6.7
+      }
+    ],
+    "bump": {
+      "years": [2018, 2019, 2020, 2021, 2022, 2023],
+      "series": [
+        {
+          "name": "Able + Available",
+          "values": [12, 6.2, 7.9, 5.4, 6.5, 26.6]
+        },
+        {
+          "name": "Work Search",
+          "values": [5.4, 15.5, 5.1, 8.3, 22.4, 25.7]
+        },
+        {
+          "name": "Other Eligibility Issues",
+          "values": [5.4, 4.4, 2.8, 19.7, 4.5, 13.7]
+        },
+        {
+          "name": "Base Period Wages",
+          "values": [3, 17.2, 13.7, 3.8, 6.5, 9.8]
+        },
+        {
+          "name": "All Other Causes",
+          "values": [16.8, 5.9, 15.3, 3.2, 15.4, 8.7]
+        }
+      ]
+    },
+    "timeliness": {
+      "years": [2018, 2019, 2020, 2021, 2022, 2023],
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": [55, 51, 54, 80, 77, 88]
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": [60, 72, 65, 74, 68, 55]
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": [2018, 2019, 2020, 2021, 2022, 2023],
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": [9, 11, 21, 24, 15, 18]
+        },
+        {
+          "name": "Fraud Rate",
+          "values": [3, 18, 10, 12, 24, 8]
+        }
+      ]
+    }
+  },
+  "2024": {
+    "pie": {
+      "Work Search": 10.8,
+      "Benefit Year Earnings": 11,
+      "Separation Issues": 23.9,
+      "Able + Available": 15.6,
+      "Employment Service Registration": 12.4,
+      "Base Period Wages": 5.3,
+      "Other Eligibility Issues": 8.6,
+      "All Other Causes": 12.3
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 10.8,
+        "Previous": 25.7,
+        "RelativeChange": -14.9
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 11,
+        "Previous": 6.6,
+        "RelativeChange": 4.4
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 23.9,
+        "Previous": 6,
+        "RelativeChange": 17.9
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 15.6,
+        "Previous": 26.6,
+        "RelativeChange": -11
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 12.4,
+        "Previous": 2.9,
+        "RelativeChange": 9.5
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 5.3,
+        "Previous": 9.8,
+        "RelativeChange": -4.5
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 8.6,
+        "Previous": 13.7,
+        "RelativeChange": -5.1
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 12.3,
+        "Previous": 8.7,
+        "RelativeChange": 3.6
+      }
+    ],
+    "bump": {
+      "years": [2019, 2020, 2021, 2022, 2023, 2024],
+      "series": [
+        {
+          "name": "Separation Issues",
+          "values": [23.6, 28.6, 26.9, 11.8, 6, 23.9]
+        },
+        {
+          "name": "Able + Available",
+          "values": [6.2, 7.9, 5.4, 6.5, 26.6, 15.6]
+        },
+        {
+          "name": "Employment Service Registration",
+          "values": [18.1, 4.7, 3.5, 16.5, 2.9, 12.4]
+        },
+        {
+          "name": "All Other Causes",
+          "values": [5.9, 15.3, 3.2, 15.4, 8.7, 12.3]
+        },
+        {
+          "name": "Benefit Year Earnings",
+          "values": [9.1, 21.7, 29.1, 16.4, 6.6, 11]
+        }
+      ]
+    },
+    "timeliness": {
+      "years": [2019, 2020, 2021, 2022, 2023, 2024],
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": [51, 54, 80, 77, 88, 74]
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": [72, 65, 74, 68, 55, 69]
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": [2019, 2020, 2021, 2022, 2023, 2024],
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": [11, 21, 24, 15, 18, 24]
+        },
+        {
+          "name": "Fraud Rate",
+          "values": [18, 10, 12, 24, 8, 5]
+        }
+      ]
+    }
+  },
+  "2025": {
+    "pie": {
+      "Work Search": 29.1,
+      "Benefit Year Earnings": 16.8,
+      "Separation Issues": 10.8,
+      "Able + Available": 7.6,
+      "Employment Service Registration": 10.3,
+      "Base Period Wages": 9,
+      "Other Eligibility Issues": 12.5,
+      "All Other Causes": 3.9
+    },
+    "table": [
+      {
+        "Metric": "Work Search",
+        "Current": 29.1,
+        "Previous": 10.8,
+        "RelativeChange": 18.3
+      },
+      {
+        "Metric": "Benefit Year Earnings",
+        "Current": 16.8,
+        "Previous": 11,
+        "RelativeChange": 5.8
+      },
+      {
+        "Metric": "Separation Issues",
+        "Current": 10.8,
+        "Previous": 23.9,
+        "RelativeChange": -13.1
+      },
+      {
+        "Metric": "Able + Available",
+        "Current": 7.6,
+        "Previous": 15.6,
+        "RelativeChange": -8
+      },
+      {
+        "Metric": "Employment Service Registration",
+        "Current": 10.3,
+        "Previous": 12.4,
+        "RelativeChange": -2.1
+      },
+      {
+        "Metric": "Base Period Wages",
+        "Current": 9,
+        "Previous": 5.3,
+        "RelativeChange": 3.7
+      },
+      {
+        "Metric": "Other Eligibility Issues",
+        "Current": 12.5,
+        "Previous": 8.6,
+        "RelativeChange": 3.9
+      },
+      {
+        "Metric": "All Other Causes",
+        "Current": 3.9,
+        "Previous": 12.3,
+        "RelativeChange": -8.4
+      }
+    ],
+    "bump": {
+      "years": [2020, 2021, 2022, 2023, 2024, 2025],
+      "series": [
+        {
+          "name": "Work Search",
+          "values": [5.1, 8.3, 22.4, 25.7, 10.8, 29.1]
+        },
+        {
+          "name": "Benefit Year Earnings",
+          "values": [21.7, 29.1, 16.4, 6.6, 11, 16.8]
+        },
+        {
+          "name": "Other Eligibility Issues",
+          "values": [2.8, 19.7, 4.5, 13.7, 8.6, 12.5]
+        },
+        {
+          "name": "Separation Issues",
+          "values": [28.6, 26.9, 11.8, 6, 23.9, 10.8]
+        },
+        {
+          "name": "Employment Service Registration",
+          "values": [4.7, 3.5, 16.5, 2.9, 12.4, 10.3]
+        }
+      ]
+    },
+    "timeliness": {
+      "years": [2020, 2021, 2022, 2023, 2024, 2025],
+      "series": [
+        {
+          "name": "First Payment Timeliness (14 days)",
+          "values": [54, 80, 77, 88, 74, 62]
+        },
+        {
+          "name": "First Payment Timeliness (21 days)",
+          "values": [65, 74, 68, 55, 69, 89]
+        }
+      ]
+    },
+    "improperfraud": {
+      "years": [2020, 2021, 2022, 2023, 2024, 2025],
+      "series": [
+        {
+          "name": "Improper Payment Rate",
+          "values": [21, 24, 15, 18, 24, 5]
+        },
+        {
+          "name": "Fraud Rate",
+          "values": [10, 12, 24, 8, 5, 22]
+        }
+      ]
+    }
+  }
+};
+</script>
+
+    <script>
+let charts = {};
+let currentBaseYear = null; // track selected year
+
+// plots
+
+const metricColors = {
+  "Work Search": "#3b8ee2",
+  "Benefit Year Earnings": "#4cc74c",
+  "Separation Issues": "#f04848",
+  "Able + Available": "#ff9b1f",
+  "Employment Service Registration": "#4dd2d2",
+  "Base Period Wages": "#ffd23b",
+  "Other Eligibility Issues": "#c15fcf",
+  "All Other Causes": "#ff7b93",
+  "Improper Payment Rate": "#2a9d8f",
+  "Fraud Rate": "#e76f51",
+};
+
+function renderPieChart(containerId, pieData) {
+  let chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+  if (charts[containerId]) echarts.dispose(chartDom);
+  let chart = echarts.init(chartDom);
+
+  let option = {
+    title: { text: "Root Causes of Overpayments", left: "center" },
+    tooltip: { trigger: "item", formatter: "{b}: {c}%" },
+    series: [
+      {
+        type: "pie",
+        radius: ["35%", "75%"],
+        center: ["50%", "55%"],
+        data: pieData.map((d) => ({
+          ...d,
+          itemStyle: { color: metricColors[d.name] || "#999" },
+        })),
+        label: { formatter: "{b}: {c}%" },
+      },
+    ],
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+function renderBumpChart(containerId, bumpData) {
+  let chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+  if (charts[containerId]) echarts.dispose(chartDom);
+  let chart = echarts.init(chartDom);
+
+  const years = bumpData.years;
+  const seriesList = bumpData.series.map((s) => {
+    const color = metricColors[s.name] || "#333"; // consistent series color
+    return {
+      name: s.name,
+      type: "line",
+      smooth: true,
+      symbolSize: 10,
+      emphasis: { focus: "series" },
+      lineStyle: { width: 3, color },
+      itemStyle: { color },
+      data: s.values,
+      label: {
+        show: true,
+        position: "top",
+        formatter: "{c}%",
+        fontSize: 11,
+        color,
+        distance: 6,
+      },
+      labelLayout: {
+        moveOverlap: "shiftY",
+      },
+    };
+  });
+
+  let option = {
+    title: { text: "Top 5 Causes of Overpayment", left: "center" },
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    xAxis: { type: "category", boundaryGap: false, data: years },
+    yAxis: {
+      type: "value",
+      name: "Percent",
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: seriesList,
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+function renderTimelinessChart(containerId, data) {
+  let chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+  if (charts[containerId]) echarts.dispose(chartDom);
+  let chart = echarts.init(chartDom);
+
+  const years = data.years;
+  const seriesList = data.series.map((s) => ({
+    name: s.name.replace("First Payment Timeliness", "FPT"),
+    type: "line",
+    smooth: true,
+    symbolSize: 8,
+    emphasis: { focus: "series" },
+    lineStyle: { width: 3, color: metricColors[s.name] || undefined },
+    itemStyle: { color: metricColors[s.name] || undefined },
+    data: s.values,
+  }));
+
+  // Add ALP reference line at 80%
+  seriesList.push({
+    name: "ALP (87%)",
+    type: "line",
+    symbol: "none", // no points
+    lineStyle: { type: "dashed", color: "red", width: 2 },
+    itemStyle: { color: "red" },
+    data: years.map(() => 87),
+  });
+
+  let option = {
+    title: {
+      text: "First Payment Timeliness (FPT)",
+      left: "center",
+      top: 0,
+    },
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0, type: "scroll", orient: "horizontal" },
+    grid: {
+      left: 60,
+      right: 20,
+      top: 50,
+      bottom: 40,
+      containLabel: true,
+    },
+    xAxis: { type: "category", boundaryGap: false, data: years },
+    yAxis: {
+      type: "value",
+      name: "Percent",
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: seriesList,
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+function renderImproperFraudChart(containerId, data) {
+  let chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+  if (charts[containerId]) echarts.dispose(chartDom);
+  let chart = echarts.init(chartDom);
+
+  const years = data.years;
+  const seriesList = data.series.map((s) => ({
+    name: s.name,
+    type: "line",
+    smooth: true,
+    symbolSize: 8,
+    emphasis: { focus: "series" },
+    lineStyle: { width: 3, color: metricColors[s.name] || undefined },
+    itemStyle: { color: metricColors[s.name] || undefined },
+    data: s.values,
+  }));
+
+  // Add ALP reference line at 10%
+  seriesList.push({
+    name: "ALP (10%)",
+    type: "line",
+    symbol: "none",
+    lineStyle: { type: "dashed", color: "red", width: 2 },
+    itemStyle: { color: "red" },
+    data: years.map(() => 10),
+  });
+
+  let option = {
+    title: {
+      text: "Improper Payment & Fraud Rates",
+      left: "center",
+      top: 0,
+    },
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0, type: "scroll", orient: "horizontal" },
+    grid: {
+      left: 60,
+      right: 20,
+      top: 50,
+      bottom: 40,
+      containLabel: true,
+    },
+    xAxis: { type: "category", boundaryGap: false, data: years },
+    yAxis: {
+      type: "value",
+      name: "Percent",
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: seriesList,
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+function renderComparisonTable(containerId, tableData, baseYear) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  tableData.sort((a, b) => b.Current - a.Current);
+
+  const rows = tableData
+    .map(
+      (row, idx) => `
+    <tr class="fade-in" style="animation-delay:${idx * 0.3}s">
+      <td>${row.Metric}</td>
+      <td>${row.Current}%</td>
+      <td>${row.Previous ? row.Previous + "%" : "NA"}</td>
+      <td>${row.RelativeChange > 0 ? "+" : ""}${row.RelativeChange}%</td>
+    </tr>
+  `
+    )
+    .join("");
+
+  container.innerHTML = `
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm text-center align-middle comparison-table">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>% of Overpayments (${baseYear} PIIA)</th>
+            <th>% of Overpayments (${baseYear - 1} PIIA)</th>
+            <th>Relative Change</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderBaseYearSelector(containerId, years, defaultYear) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const select = document.createElement("select");
+  select.className = "form-select form-select-sm";
+  years.forEach((y) => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    if (y == defaultYear) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  container.innerHTML = "";
+  container.appendChild(select);
+
+  select.addEventListener("change", () => {
+    currentBaseYear = select.value;
+    updateDashboard(currentBaseYear);
+  });
+}
+
+function updateDashboard(baseYear) {
+  if (!ALLDATA[baseYear]) return;
+
+  baseYear = parseInt(baseYear, 10);
+  currentBaseYear = baseYear;
+
+  const pieData = Object.entries(ALLDATA[baseYear].pie).map(
+    ([name, value]) => ({ name, value })
+  );
+  renderPieChart("pie_chart_container", pieData);
+  renderComparisonTable(
+    "comparison_table_container",
+    ALLDATA[baseYear].table,
+    baseYear
+  );
+
+  const yearsRange = [];
+  for (let y = baseYear - 5; y <= baseYear; y++) {
+    yearsRange.push(y);
+  }
+
+  if (ALLDATA[baseYear].bump) {
+    const bumpData = {
+      years: yearsRange,
+      series: ALLDATA[baseYear].bump.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = ALLDATA[baseYear].bump.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+    renderBumpChart("bump_chart_container", bumpData);
+  }
+
+  if (ALLDATA[baseYear].timeliness) {
+    const timelinessData = {
+      years: yearsRange,
+      series: ALLDATA[baseYear].timeliness.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = ALLDATA[baseYear].timeliness.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+    renderTimelinessChart("timeliness_chart_container", timelinessData);
+  }
+
+  if (ALLDATA[baseYear].improperfraud) {
+    const ifData = {
+      years: yearsRange,
+      series: ALLDATA[baseYear].improperfraud.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = ALLDATA[baseYear].improperfraud.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+    renderImproperFraudChart("improperfraud_chart_container", ifData);
+  }
+
+  const header = document.getElementById("reportHeader");
+  if (header) {
+    const startYear = baseYear - 1;
+    const endYear = baseYear;
+    header.textContent = `UI Overpayments Report (PIIA ${startYear}: July ${startYear} to June ${endYear})`;
+  }
+}
+
+function switchView(view) {
+  if (!currentBaseYear) return;
+
+  if (view === "plots") {
+    document.getElementById("plots-view").style.display = "block";
+    document.getElementById("table-view").style.display = "none";
+
+    const pieData = Object.entries(ALLDATA[currentBaseYear].pie).map(
+      ([name, value]) => ({ name, value })
+    );
+    renderPieChart("pie_chart_container", pieData);
+
+    if (ALLDATA[currentBaseYear].bump) {
+      renderBumpChart("bump_chart_container", ALLDATA[currentBaseYear].bump);
+    }
+
+    if (ALLDATA[currentBaseYear].timeliness) {
+      renderTimelinessChart(
+        "timeliness_chart_container",
+        ALLDATA[currentBaseYear].timeliness
+      );
+    }
+
+    if (ALLDATA[currentBaseYear].improperfraud) {
+      renderImproperFraudChart(
+        "improperfraud_chart_container",
+        ALLDATA[currentBaseYear].improperfraud
+      );
+    }
+  } else {
+    document.getElementById("plots-view").style.display = "none";
+    document.getElementById("table-view").style.display = "block";
+
+    renderComparisonTable(
+      "comparison_table_container",
+      ALLDATA[currentBaseYear].table,
+      currentBaseYear
+    );
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const years = Object.keys(ALLDATA)
+    .map((y) => parseInt(y))
+    .sort((a, b) => b - a);
+  const defaultYear = years[0];
+
+  renderBaseYearSelector("base_year_selector", years, defaultYear);
+  updateDashboard(defaultYear);
+
+  const toggle = document.getElementById("viewToggle");
+  toggle.addEventListener("click", (e) => {
+    if (e.target.classList.contains("toggle-option")) {
+      document
+        .querySelectorAll(".toggle-option")
+        .forEach((btn) => btn.classList.remove("active"));
+      e.target.classList.add("active");
+
+      switchView(e.target.getAttribute("data-view"));
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    Object.values(charts).forEach((c) => c.resize());
+  });
+});
+</script>
+  </body>
+</html>

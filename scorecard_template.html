@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>UI Overpayments Report</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <!--INLINE_CSS-->
+    <style>
+      /* ensures room for toggle */
+      .section-header {
+        min-height: 44px;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+    <!-- Sidebar -->
+    <div id="sidebar" class="bg-dark text-white p-3">
+      <h4 class="mb-3">U.S. Department of Labor</h4>
+      <div class="mt-3">
+        Last updated:
+        <!--DATE-->
+      </div>
+      <div class="mt-3">
+        <strong>Select Base Year:</strong><br />
+        <div id="base_year_selector"></div>
+      </div>
+      <div class="mt-3">
+        <strong>Select Category:</strong><br />
+        <div id="category_selector"></div>
+      </div>
+      <div class="mt-3">
+        <strong>Reporting Period:</strong><br />
+        <!--YEAR_RANGE_TEXT-->
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div id="main-content" class="p-4">
+      <!-- Section wrapper -->
+      <div class="section">
+        <!-- Title + toggle row -->
+        <div
+          class="section-header d-flex align-items-center mb-3 position-relative"
+        >
+          <h3 id="reportTitle" class="m-0 w-100 text-center">
+            UI Overpayments Report
+          </h3>
+          <div
+            class="toggle-pill position-absolute end-0 top-50 translate-middle-y"
+            id="viewToggle"
+          >
+            <button class="toggle-option active" data-view="plots">
+              Plots
+            </button>
+            <button class="toggle-option" data-view="table">Table</button>
+          </div>
+        </div>
+
+        <!-- Injected sections (from R) -->
+        <!--METRIC_SECTIONS-->
+      </div>
+    </div>
+
+    <!--TIMESERIES_JS-->
+    <!--INLINE_JS-->
+  </body>
+</html>

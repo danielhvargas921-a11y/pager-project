@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Regional Scorecard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+/* ---------------- Sidebar ---------------- */
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: #0a2239;
+  color: white;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+#sidebar h4 {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+#sidebar small {
+  color: #b0c4de;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ---------------- Main Content ---------------- */
+#main-content {
+  margin-left: 270px;
+  padding: 20px;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* ---------------- Table Styling ---------------- */
+#scorecard-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+}
+
+#scorecard-table th,
+#scorecard-table td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border: 1px solid #dee2e6;
+}
+
+#scorecard-table th {
+  background-color: #e9ecef;
+  font-weight: bold;
+}
+
+.section-header td {
+  background-color: #0a2239;
+  color: white;
+  font-weight: bold;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 1rem;
+}
+
+/* ---------------- Conditional Formatting ---------------- */
+td.pass {
+  background: #d4edda;
+  color: #155724;
+  font-weight: 500;
+}
+
+td.warning {
+  background: #fff3cd;
+  color: #856404;
+  font-weight: 500;
+}
+
+td.fail {
+  background: #f8d7da;
+  color: #721c24;
+  font-weight: 500;
+}
+
+td.na {
+  background: #f1f3f4c8;
+  color: #5f6368;
+  font-style: italic;
+}
+
+td.special {
+  background: #f1f3f4c8;
+  color: #202124;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 768px) {
+  #sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  #main-content {
+    margin-left: 0;
+  }
+}
+
+/* Sidebar legend */
+.legend-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #dcdcdc;
+}
+
+.legend-list li {
+  margin-bottom: 4px;
+}
+
+.legend-symbol {
+  display: inline-block;
+  min-width: 20px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.legend-box {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.legend-box.pass {
+  background-color: #155724; /* green */
+}
+
+.legend-box.fail {
+  background-color: #721c24; /* red */
+}
+
+.section {
+  margin: 0 auto 60px auto;
+  max-width: 1200px;
+}
+
+.section h3 {
+  font-weight: 600;
+}
+
+.table-responsive table {
+  margin: 0 auto;
+  border-collapse: collapse;
+}
+
+.table-responsive th {
+  background-color: #f8f9fa;
+  font-weight: bold;
+  text-align: center;
+}
+
+.table-responsive td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+@media print {
+  #sidebar {
+    display: none !important;
+  }
+  #main-content {
+    margin: 0 !important;
+    padding: 0 10px !important;
+    width: 100% !important;
+  }
+  .section {
+    page-break-after: always;
+  }
+  #stateChart {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 16/9;
+    page-break-inside: avoid;
+  }
+}
+
+/* ---------------- Export Button ---------------- */
+#main-content .btn.btn-primary {
+  background-color: transparent !important;
+  color: #0a2239 !important; /* dark navy text */
+  border: 1px solid #0a2239 !important;
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#main-content .btn.btn-primary:hover {
+  background-color: #e6eef5 !important; /* light grey-blue */
+  color: #0a2239 !important; /* keep text navy */
+}
+
+#visualSummaryChart {
+  margin-top: 30px;
+}
+
+/* Center plots and limit their max width */
+.plot-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ---------------- State Summary Cards ---------------- */
+#stateSummary {
+  max-width: 100%;
+  margin-top: 30px; /* more spacing from table */
+  border-top: 3px solid #dee2e6; /* subtle visual break */
+  padding-top: 20px;
+}
+
+#stateSummary .card {
+  width: 100%;
+  margin-bottom: 20px;
+  border: 2px solid #0a2239 !important;
+}
+
+#stateSummary .card-header {
+  background-color: #0a2239 !important;
+  color: #ffffff !important;
+  font-weight: bold;
+  font-size: 1rem;
+  text-align: center; /* center header text */
+}
+
+/* Underperforming Metrics: align text + badges cleanly */
+#stateSummary .card:first-of-type .list-group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 50px; /* taller rows */
+}
+
+#stateSummary .card:first-of-type .list-group-item span.badge {
+  min-width: 180px; /* ensures equal width */
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 6px 10px; /* thicker labels */
+}
+
+/* Recommended Actions: keep natural text flow */
+#stateSummary .card:nth-of-type(2) .list-group-item {
+  display: block;
+  padding: 10px 15px;
+  line-height: 1.4;
+}
+
+/* ---------------- Pill Toggle ---------------- */
+#scorecardPills {
+  margin-bottom: 1.5rem;
+}
+
+#scorecardPills .nav-link {
+  color: #0a2239;
+  border: 1px solid #0a2239;
+  margin-right: 6px;
+  font-weight: 500;
+  padding: 8px 18px; /* optional: bigger click area */
+  transition: background-color 0.3s, color 0.3s; /* smooth effect */
+}
+
+#scorecardPills .nav-link.active {
+  background-color: #0a2239;
+  color: #ffffff;
+}
+
+/* Hover effect for inactive pills (buttons or links) */
+#scorecardPills .nav-link:not(.active):hover,
+#scorecardPills button.nav-link:not(.active):hover {
+  background-color: #e6eef5 !important; /* light gray-blue */
+  color: #0a2239 !important; /* keep text dark */
+}
+
+/* ---------------- Sidebar Toggle (Scorecard vs National) ---------------- */
+#sidebarToggle {
+  display: flex;
+  flex-direction: column; /* stack buttons vertically */
+  gap: 8px; /* spacing between buttons */
+  width: 100%;
+}
+
+#sidebarToggle .btn {
+  width: 100%;
+  text-align: center;
+  color: #ffffff; /* white text by default */
+  border: 1px solid #ffffff44; /* subtle border */
+  background-color: transparent; /* blend with sidebar */
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s, box-shadow 0.2s;
+}
+
+#sidebarToggle .btn.active {
+  background-color: #ffffff; /* white background for active */
+  color: #0a2239; /* dark text for contrast */
+  font-weight: 600;
+}
+
+#sidebarToggle .btn:not(.active):hover {
+  background-color: #173a5e; /* subtle blue hover (still dark) */
+  color: #ffffff;
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+/* ---------------- State/Regional Pill Toggle ---------------- */
+#stateRegionalToggle {
+  display: flex;
+  width: 220px; /* fixed width for pill */
+  border-radius: 30px;
+  overflow: hidden;
+  border: 1px solid #0a2239; /* match section header border */
+}
+
+#stateRegionalToggle .btn {
+  flex: 1; /* equal halves */
+  border-radius: 0 !important;
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  color: #0a2239;
+  background-color: #f8f9fa; /* light gray shading for inactive */
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#stateRegionalToggle .btn:first-of-type {
+  border-top-left-radius: 30px !important;
+  border-bottom-left-radius: 30px !important;
+}
+
+#stateRegionalToggle .btn:last-of-type {
+  border-top-right-radius: 30px !important;
+  border-bottom-right-radius: 30px !important;
+}
+
+#stateRegionalToggle .btn.active {
+  background-color: #0a2239; /* shaded in dark navy */
+  color: #ffffff;
+}
+
+#stateRegionalToggle .btn:not(.active):hover {
+  background-color: #e1e6ec; /* subtle hover shade for inactive */
+}
+</style>
+  </head>
+  <body class="bg-light">
+    <div id="sidebar" class="bg-dark text-white p-3">
+      <h4 class="mb-3">U.S. Department of Labor</h4>
+
+      <!-- Top-Level View Toggle -->
+      <div class="mb-3 d-flex flex-column" id="sidebarToggle">
+        <button
+          type="button"
+          class="btn btn-outline-primary active mb-2"
+          data-view="scorecard"
+        >
+          Scorecard
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          data-view="national"
+        >
+          National Report
+        </button>
+      </div>
+
+      <hr />
+
+      <!-- Dataset -->
+      <label for="datasetSelect" class="form-label">Dataset:</label>
+      <select id="datasetSelect" class="form-select form-select-sm mb-2">
+        <option value="July - June">July - June</option>
+<option value="April - March">April - March</option>
+      </select>
+
+      <!-- State Selector -->
+      <div id="stateSelectWrapper" style="display: none">
+        <label for="stateSelect" class="form-label">State:</label>
+        <select
+          id="stateSelect"
+          class="form-select form-select-sm mb-2"
+        ></select>
+      </div>
+
+      <!-- Region Selector -->
+      <div id="regionSelectWrapper" style="display: none">
+        <label for="regionSelect" class="form-label">Region:</label>
+        <select id='regionSelect' class='form-select form-select-sm'> <option value="Region 2 - Philadelphia">Region 2 - Philadelphia</option>
+<option value="Region 3 - Atlanta">Region 3 - Atlanta</option> </select>
+      </div>
+
+      <div class="mt-3">
+        Last updated:
+        2025-09-13
+      </div>
+
+      <hr />
+      <h6>Legend</h6>
+      <ul class="legend-list">
+        <li><span class="legend-symbol">&#9733;</span> Missing data</li>
+        <li><span class="legend-symbol">&#8212;</span> Older data used</li>
+        <li><span class="legend-box pass"></span> Meets / Pass (Green)</li>
+        <li><span class="legend-box fail"></span> Fails Benchmark (Red)</li>
+      </ul>
+    </div>
+
+    <div id="main-content" class="p-4">
+      <!-- Header Row with Export Button -->
+      <div class="d-flex justify-content-end mb-4">
+        <button class="btn btn-sm btn-primary" onclick="window.print()">
+          Export Report
+        </button>
+      </div>
+
+      <!-- Performance Table Section -->
+      <div
+        class="section p-3 bg-white shadow-sm rounded"
+        id="performanceSection"
+      >
+        <div class="position-relative mb-3 text-center">
+          <h3 class="mb-0">Performance Metrics</h3>
+
+          <!-- iOS-style Regional/State Toggle -->
+          <div
+            id="stateRegionalToggle"
+            class="btn-group position-absolute end-0 top-50 translate-middle-y"
+          >
+            <button class="btn active" data-view="regional">Regional</button>
+            <button class="btn" data-view="state">State</button>
+          </div>
+        </div>
+
+        <p class="text-muted text-center">
+          Results for the selected view, alongside benchmarks and national
+          averages for comparison.
+        </p>
+        <div id="scorecard-table" class="table-responsive"></div>
+        <div id="stateSummary" class="mt-4"></div>
+      </div>
+
+      <!-- Visual Plots Section -->
+      <div
+        class="section p-3 bg-white shadow-sm rounded"
+        id="plotsSection"
+        style="display: none"
+      >
+        <h3 class="mb-3 text-center">Visual Plots</h3>
+        <p class="text-muted text-center mb-5">
+          The following charts show how the selected state compares against the
+          national average and benchmarks.
+        </p>
+        <div id="plotsContainer" class="mt-3"></div>
+      </div>
+    </div>
+
+    <script>
+var DATASETS = {'July - June':{ regions:{'Region 2 - Philadelphia':['DC','DE','MD','PA','VA','WV'], 'Region 3 - Atlanta':['AL','FL','GA','KY','MS','NC','SC','TN']}, metrics:[{ section:'BENEFITS MEASURES', label:'First Payment Promptness (%)', values:{DC:64.175,DE:51.533,MD:66.125,PA:74.2538,VA:82.625,WV:84.7583,AL:53.553,FL:45.967,GA:75.167,KY:60.108,MS:83.667,NC:72.525,SC:91.383,TN:89.642,NATIONAL:71.1} },
+{ section:'PROGRAM INTEGRITY MEASURES', label:'Overpayment Detection (%)', values:{DC:46.01,DE:60.87,MD:187.87,PA:38.88,VA:283.3,WV:38.88,AL:160.5,FL:63.187,GA:107.545,KY:555.861,MS:229.102,NC:134.995,SC:76.747,TN:88.225,NATIONAL:148} },
+{ section:'PROGRAM INTEGRITY MEASURES', label:'Improper Payments Measure (%)', values:{DC:13.235,DE:26.177,MD:7.136,PA:10.033,VA:18.563,WV:7.868,AL:7.643,FL:23.207,GA:7.94,KY:35.344,MS:8.192,NC:22.162,SC:7.292,TN:26.523,NATIONAL:15.8} },
+{ section:'PROGRAM INTEGRITY MEASURES', label:'UI Overpayment Recovery Measure (%)', values:{DC:40.72,DE:88.49,MD:12.62,PA:31.96,VA:-139.7,WV:80.96,AL:47.8,FL:20.43,GA:28.26,KY:45.17,MS:193.71,NC:94.16,SC:203.07,TN:67.32,NATIONAL:58.2} }] },
+'April - March':{ regions:{'Region 2 - Philadelphia':['DC','DE','MD','PA','VA','WV'], 'Region 3 - Atlanta':['AL','FL','GA','KY','MS','NC','SC','TN']}, metrics:[{ section:'BENEFITS MEASURES', label:'First Payment Promptness (%)', values:{DC:60.842,DE:52.108,MD:63.725,PA:70.85,VA:82.058,WV:85.05,AL:43.67,FL:52.95,GA:74.517,KY:56.25,MS:82.792,NC:73.625,SC:91.883,TN:86.183,NATIONAL:69.8} },
+{ section:'PROGRAM INTEGRITY MEASURES', label:'Overpayment Detection (%)', values:{DC:41.707,DE:48.835,MD:226.099,PA:34.472,VA:207.375,WV:39.801,AL:125.962,FL:69.984,GA:78.419,KY:551.426,MS:239.5,NC:144.257,SC:67.715,TN:48,NATIONAL:137.4} },
+{ section:'PROGRAM INTEGRITY MEASURES', label:'Improper Payments Measure (%)', values:{DC:14.039,DE:34.477,MD:6.785,PA:10.607,VA:18.05,WV:9.817,AL:7.202,FL:28.379,GA:6.752,KY:35.172,MS:8.685,NC:20.578,SC:7.91,TN:22.255,NATIONAL:16.5} },
+{ section:'PROGRAM INTEGRITY MEASURES', label:'UI Overpayment Recovery Measure (%)', values:{DC:67.44,DE:83.51,MD:13.8,PA:41.9,VA:-390.14,WV:71.29,AL:41.68,FL:12.89,GA:28.19,KY:-32.06,MS:179.08,NC:104.55,SC:194.33,TN:77.78,NATIONAL:35.3} }] }};
+</script>
+
+    <script>
+// ---------------- Classification ----------------
+function getClassForValue(label, val) {
+  if (val === undefined || val === null) return "";
+
+  if (!isNaN(parseFloat(val))) {
+    let num = parseFloat(val);
+    if (label.includes("First Payment Promptness"))
+      return num >= 87 ? "pass" : "fail";
+    if (label.includes("Overpayment Detection"))
+      return num >= 50 ? "pass" : "fail";
+    if (label.includes("Improper Payments Measure"))
+      return num < 10 ? "pass" : "fail";
+    if (label.includes("UI Overpayment Recovery Measure"))
+      return num >= 68 ? "pass" : "fail";
+    if (num >= 85) return "pass";
+    if (num >= 75) return "warning";
+    return "fail";
+  }
+
+  val = String(val).toUpperCase();
+  if (val === "F") return "fail";
+  if (val === "P") return "pass";
+  if (val === "N/A") return "na";
+  if (val === "*") return "special";
+  return "";
+}
+
+function getDisplayValue(val) {
+  if (val === undefined || val === null) return "";
+  if (!isNaN(parseFloat(val))) return val;
+  val = String(val).toUpperCase();
+  if (val === "F") return " F";
+  if (val === "P") return " P";
+  if (val === "N/A") return "Ã¢â‚¬â€";
+  if (val === "*") return "Ã¢Ëœâ€¦";
+  return val;
+}
+
+// ---------------- Benchmarks ----------------
+function getBenchmark(label) {
+  if (label.includes("First Payment Promptness")) return 87;
+  if (label.includes("Overpayment Detection")) return 50;
+  if (label.includes("Improper Payments Measure")) return 10;
+  if (label.includes("UI Overpayment Recovery Measure")) return 68;
+  return 85;
+}
+
+function getBenchmarkDisplay(label) {
+  if (label.includes("First Payment Promptness")) return "&ge; 87";
+  if (label.includes("Overpayment Detection")) return "&ge; 50";
+  if (label.includes("Improper Payments Measure")) return "&le; 10";
+  if (label.includes("UI Overpayment Recovery Measure")) return "&ge; 68";
+  return "&ge; 85";
+}
+
+// ---------------- Regional Table ----------------
+function renderTable(datasetName, region) {
+  let dataset = DATASETS[datasetName];
+  let states = dataset.regions[region];
+  let html = "<table class='table table-bordered table-sm'>";
+  html +=
+    "<thead><tr><th>Metric</th>" +
+    states.map((s) => `<th>${s}</th>`).join("") +
+    "</tr></thead><tbody>";
+
+  let currentSection = "";
+  for (let metric of dataset.metrics) {
+    if (metric.section !== currentSection) {
+      html += `<tr class='section-header'><td colspan='${states.length + 1}'>${
+        metric.section
+      }</td></tr>`;
+      currentSection = metric.section;
+    }
+    html += `<tr><td>${metric.label}</td>`;
+    for (let st of states) {
+      let val = metric.values[st];
+      let cls = getClassForValue(metric.label, val);
+      let disp = getDisplayValue(val);
+      html += `<td class='${cls}'>${disp ?? ""}</td>`;
+    }
+    html += "</tr>";
+  }
+  html += "</tbody></table>";
+
+  document.getElementById("scorecard-table").innerHTML = html;
+  document.getElementById("stateSummary").innerHTML = "";
+  document.getElementById("plotsSection").style.display = "none";
+}
+
+// ---------------- National ----------------
+function renderNational(datasetName) {
+  let dataset = DATASETS[datasetName];
+  let html =
+    "<table class='table table-bordered table-sm'><thead><tr><th>Metric</th><th>National Avg</th></tr></thead><tbody>";
+
+  let currentSection = "";
+  for (let metric of dataset.metrics) {
+    if (metric.section !== currentSection) {
+      html += `<tr class='section-header'><td colspan='2'>${metric.section}</td></tr>`;
+      currentSection = metric.section;
+    }
+    let val = metric.values["NATIONAL"];
+    html += `<tr><td>${metric.label}</td><td>${val}</td></tr>`;
+  }
+  html += "</tbody></table>";
+
+  document.getElementById("scorecard-table").innerHTML = html;
+  document.getElementById("stateSummary").innerHTML = "";
+  document.getElementById("plotsSection").style.display = "none";
+}
+
+// ---------------- State Comparison ----------------
+function renderStateComparison(datasetName, state) {
+  let dataset = DATASETS[datasetName];
+  let html =
+    "<table class='table table-bordered table-sm'><thead><tr><th>Metric</th><th>Benchmark</th><th>" +
+    state +
+    "</th><th>National Avg</th></tr></thead><tbody>";
+
+  let worseThanNatl = [];
+  let failedBenchmarks = [];
+  let currentSection = "";
+
+  for (let metric of dataset.metrics) {
+    if (metric.section !== currentSection) {
+      html += `<tr class='section-header'><td colspan='4'>${metric.section}</td></tr>`;
+      currentSection = metric.section;
+    }
+
+    let sValRaw = metric.values[state];
+    let nValRaw = metric.values["NATIONAL"];
+    let sVal = parseFloat(sValRaw);
+    let nVal = parseFloat(nValRaw);
+
+    let benchmarkDisp = getBenchmarkDisplay(metric.label);
+
+    let sDisp = getDisplayValue(sValRaw);
+    let nDisp = getDisplayValue(nValRaw);
+    let sCls = getClassForValue(metric.label, sValRaw);
+
+    html += `<tr><td>${metric.label}</td><td>${benchmarkDisp}</td><td class='${sCls}'>${sDisp}</td><td>${nDisp}</td></tr>`;
+
+    if (!isNaN(sVal) && !isNaN(nVal) && sVal < nVal)
+      worseThanNatl.push({
+        label: metric.label,
+        diff: (nVal - sVal).toFixed(1),
+      });
+
+    let meets = false;
+    if (!isNaN(sVal)) {
+      if (metric.label.includes("First Payment Promptness")) meets = sVal >= 87;
+      else if (metric.label.includes("Overpayment Detection"))
+        meets = sVal >= 50;
+      else if (metric.label.includes("Improper Payments Measure"))
+        meets = sVal < 10;
+      else if (metric.label.includes("UI Overpayment Recovery Measure"))
+        meets = sVal >= 68;
+      else meets = sVal >= 85;
+    }
+    if (!meets && !isNaN(sVal)) {
+      let bench = getBenchmark(metric.label);
+      let diff = Math.abs(sVal - bench).toFixed(1);
+      failedBenchmarks.push({ label: metric.label, diff: diff });
+    }
+  }
+  html += "</tbody></table>";
+  document.getElementById("scorecard-table").innerHTML = html;
+
+  // Summary
+  let summaryEl = document.getElementById("stateSummary");
+  summaryEl.style.display = "block";
+
+  let summaryHTML = "";
+
+  // Underperforming Metrics card
+  summaryHTML += `<div class="card mb-3">
+    <div class="card-header">Underperforming Metrics</div>
+    <ul class="list-group list-group-flush">`;
+
+  if (worseThanNatl.length > 0 || failedBenchmarks.length > 0) {
+    let combined = {};
+
+    worseThanNatl.forEach((m) => {
+      if (!combined[m.label]) combined[m.label] = [];
+      combined[m.label].push(`Below Natl Avg (${m.diff}%)`);
+    });
+
+    failedBenchmarks.forEach((m) => {
+      if (!combined[m.label]) combined[m.label] = [];
+      combined[m.label].push(`Fails Benchmark (${m.diff}%)`);
+    });
+
+    for (let metric in combined) {
+      summaryHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>${metric}</span>
+        <span>`;
+      combined[metric].forEach((reason) => {
+        if (reason.includes("Below Natl Avg")) {
+          summaryHTML += `<span class="badge bg-warning text-dark ms-1">${reason}</span>`;
+        } else if (reason.includes("Fails Benchmark")) {
+          summaryHTML += `<span class="badge bg-danger ms-1">${reason}</span>`;
+        }
+      });
+      summaryHTML += `</span></li>`;
+    }
+  } else {
+    summaryHTML += `<li class="list-group-item text-success"><strong>All metrics meet/exceed benchmarks and national averages.</strong></li>`;
+  }
+
+  summaryHTML += `</ul></div>`;
+
+  // Recommended Actions card
+  summaryHTML += `<div class="card mb-3">
+    <div class="card-header">Recommended Actions</div>
+    <ul class="list-group list-group-flush">`;
+
+  if (failedBenchmarks.length > 0) {
+    failedBenchmarks.forEach((m) => {
+      if (m.label.includes("First Payment Promptness")) {
+        summaryHTML += `<li class="list-group-item"><strong>${m.label}:</strong> Enhance claims processing efficiency through staff training and workflow automation.</li>`;
+      } else if (m.label.includes("Overpayment Detection")) {
+        summaryHTML += `<li class="list-group-item"><strong>${m.label}:</strong> Strengthen fraud detection protocols and increase data cross-matching to identify overpayments earlier.</li>`;
+      } else if (m.label.includes("Improper Payments Measure")) {
+        summaryHTML += `<li class="list-group-item"><strong>${m.label}:</strong> Implement stricter eligibility verification processes and provide clearer claimant guidance.</li>`;
+      } else if (m.label.includes("UI Overpayment Recovery Measure")) {
+        summaryHTML += `<li class="list-group-item"><strong>${m.label}:</strong> Improve recovery strategies through enhanced claimant outreach, repayment plans, and data-driven collection efforts.</li>`;
+      } else {
+        summaryHTML += `<li class="list-group-item"><strong>${m.label}:</strong> Develop targeted action plans to address gaps and align results with benchmark standards.</li>`;
+      }
+    });
+  } else {
+    summaryHTML += `<li class="list-group-item text-success"><strong>All benchmarks met Ã¢â‚¬â€ maintain current practices.</strong></li>`;
+  }
+
+  summaryHTML += `</ul></div>`;
+  summaryEl.innerHTML = summaryHTML;
+
+  // Plots
+  document.getElementById("plotsSection").style.display = "block";
+  let grouped = {};
+  for (let m of dataset.metrics) {
+    if (!grouped[m.section]) grouped[m.section] = [];
+    grouped[m.section].push(m);
+  }
+  let plotsContainer = document.getElementById("plotsContainer");
+  plotsContainer.innerHTML = "";
+  Object.keys(grouped).forEach((section) => {
+    let div = document.createElement("div");
+    div.className = "plot-container";
+    div.style.marginBottom = "50px";
+    div.innerHTML = `<h5 class="text-center mb-3">${section}</h5>
+      <div id="plot-${section.replace(
+        /\s+/g,
+        "-"
+      )}" style="width:100%;height:500px;"></div>`;
+    plotsContainer.appendChild(div);
+    renderCategoryPlot(section, grouped[section], state);
+  });
+}
+
+// ---------------- Render Category Plot ----------------
+function renderCategoryPlot(section, metrics, state) {
+  let labels = [];
+  let stateVals = [];
+  let natlVals = [];
+  let benchmarks = [];
+
+  for (let metric of metrics) {
+    let sVal = parseFloat(metric.values[state]);
+    let nVal = parseFloat(metric.values["NATIONAL"]);
+    let benchmark = getBenchmark(metric.label);
+
+    if (!isNaN(sVal) && !isNaN(nVal)) {
+      labels.push(metric.label);
+      stateVals.push(sVal);
+      natlVals.push(nVal);
+      benchmarks.push(benchmark);
+    }
+  }
+
+  const colors = ["#5070dd", "#b6d634", "#505372"];
+
+  let chartDom = document.getElementById(
+    `plot-${section.replace(/\s+/g, "-")}`
+  );
+  echarts.dispose(chartDom);
+  let chart = echarts.init(chartDom);
+
+  let barWidth = Math.max(40, 80 / metrics.length);
+  let barCategoryGap = metrics.length > 6 ? "10%" : "30%";
+
+  let option = {
+    color: colors,
+    tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+    legend: { data: ["National Avg", state, "Benchmark"], top: 0 },
+    grid: { left: "3%", right: "4%", bottom: 50, top: 60, containLabel: true },
+    xAxis: [
+      { type: "category", data: labels, axisLabel: { show: false } },
+      {
+        type: "category",
+        data: labels,
+        position: "top",
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: {
+          show: true,
+          fontWeight: "bold",
+          color: "#333",
+          margin: 10,
+          interval: 0,
+          formatter: function (value) {
+            return value.replace(/(.{20})/g, "$1\n");
+          },
+        },
+      },
+    ],
+    yAxis: { type: "value", name: "Value" },
+    series: [
+      {
+        name: "National Avg",
+        type: "bar",
+        data: natlVals,
+        barWidth: barWidth,
+        barCategoryGap: barCategoryGap,
+        itemStyle: { color: colors[0] },
+      },
+      {
+        name: state,
+        type: "bar",
+        data: stateVals,
+        barWidth: barWidth,
+        barCategoryGap: barCategoryGap,
+        itemStyle: { color: colors[1] },
+      },
+      {
+        name: "Benchmark",
+        type: "line",
+        data: benchmarks,
+        symbol: "circle",
+        symbolSize: 8,
+        lineStyle: { color: colors[2], width: 3, type: "dashed" },
+        itemStyle: { color: colors[2] },
+      },
+    ],
+  };
+
+  chart.setOption(option);
+}
+
+// ---------------- Populate States ----------------
+function populateStates(datasetName) {
+  let regions = DATASETS[datasetName].regions;
+  let states = Object.values(regions).flat();
+  states.sort((a, b) => a.localeCompare(b));
+  let stateSelect = document.getElementById("stateSelect");
+  stateSelect.innerHTML = states
+    .map((s) => `<option value="${s}">${s}</option>`)
+    .join("");
+}
+
+// ---------------- State ----------------
+let currentDataset = Object.keys(DATASETS)[0];
+
+// ---------------- Dataset Select ----------------
+document
+  .getElementById("datasetSelect")
+  .addEventListener("change", function () {
+    currentDataset = this.value;
+
+    if (document.getElementById("stateOption").checked) {
+      populateStates(currentDataset);
+      renderStateComparison(
+        currentDataset,
+        document.getElementById("stateSelect").value
+      );
+    } else {
+      let firstRegion = Object.keys(DATASETS[currentDataset].regions)[0];
+      renderTable(currentDataset, firstRegion);
+    }
+  });
+
+// ---------------- Region Select ----------------
+document.getElementById("regionSelect").addEventListener("change", function () {
+  renderTable(currentDataset, this.value);
+});
+
+// ---------------- State Select ----------------
+document.getElementById("stateSelect").addEventListener("change", function () {
+  renderStateComparison(currentDataset, this.value);
+});
+
+// ---------------- Sidebar segmented toggle (Scorecard vs National) ----------------
+document.querySelectorAll("#sidebarToggle .btn").forEach((btn) => {
+  btn.addEventListener("click", function () {
+    document
+      .querySelectorAll("#sidebarToggle .btn")
+      .forEach((el) => el.classList.remove("active"));
+    this.classList.add("active");
+
+    let mode = this.getAttribute("data-view");
+
+    if (mode === "scorecard") {
+      document.getElementById("stateRegionalToggle").style.display =
+        "inline-flex";
+
+      if (document.getElementById("stateOption").checked) {
+        populateStates(currentDataset);
+        renderStateComparison(
+          currentDataset,
+          document.getElementById("stateSelect").value
+        );
+      } else {
+        let firstRegion = Object.keys(DATASETS[currentDataset].regions)[0];
+        renderTable(currentDataset, firstRegion);
+      }
+    } else if (mode === "national") {
+      document.getElementById("stateRegionalToggle").style.display = "none";
+      document.getElementById("stateSelectWrapper").style.display = "none";
+      document.getElementById("regionSelectWrapper").style.display = "none";
+      renderNational(currentDataset);
+    }
+  });
+});
+
+// ---------------- State/Regional Toggle ----------------
+document.querySelectorAll("#stateRegionalToggle .btn").forEach((btn) => {
+  btn.addEventListener("click", function () {
+    // remove active from both buttons
+    document
+      .querySelectorAll("#stateRegionalToggle .btn")
+      .forEach((el) => el.classList.remove("active"));
+
+    // set active on clicked button
+    this.classList.add("active");
+
+    if (this.dataset.view === "regional") {
+      document.getElementById("stateSelectWrapper").style.display = "none";
+      document.getElementById("regionSelectWrapper").style.display = "block";
+      let firstRegion = Object.keys(DATASETS[currentDataset].regions)[0];
+      renderTable(currentDataset, firstRegion);
+      document.getElementById("plotsSection").style.display = "none";
+      document.getElementById("stateSummary").innerHTML = "";
+    } else if (this.dataset.view === "state") {
+      document.getElementById("stateSelectWrapper").style.display = "block";
+      document.getElementById("regionSelectWrapper").style.display = "none";
+      populateStates(currentDataset);
+      renderStateComparison(
+        currentDataset,
+        document.getElementById("stateSelect").value
+      );
+    }
+  });
+});
+
+// ---------------- Initial Render ----------------
+// Default to Regional
+let firstRegion = Object.keys(DATASETS[currentDataset].regions)[0];
+renderTable(currentDataset, firstRegion);
+document.getElementById("regionSelectWrapper").style.display = "block";
+</script>
+  </body>
+</html>

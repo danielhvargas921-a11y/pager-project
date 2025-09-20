@@ -1,0 +1,165 @@
+/* Sidebar styling */
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: #0a2239;
+  color: white;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Main panel styling */
+#main-content {
+  margin-left: 270px;
+  padding: 20px;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Sections (report page style) */
+.section {
+  margin: 40px auto;
+  width: 95%;
+  max-width: 1100px;
+  background: #fff;
+  border: 1px solid #dee2e6; /* single clean border */
+  border-radius: 8px;
+  padding: 40px 50px;
+}
+
+/* Larger screens */
+@media (min-width: 1600px) {
+  .section {
+    max-width: 1200px;
+  }
+}
+
+/* Small laptops/tablets */
+@media (max-width: 992px) {
+  .section {
+    width: 100%;
+    padding: 20px;
+  }
+}
+
+.section h3 {
+  font-weight: 600;
+  color: #0a2239;
+}
+
+/* Chart containers */
+.chart-container {
+  width: 100% !important;
+  height: 340px !important;
+  margin: 0 auto 30px auto;
+  background-color: transparent; /* no extra boxes */
+}
+
+.chart-small {
+  height: 300px !important;
+}
+
+/* Table styling */
+.comparison-table th {
+  background-color: #0a2239 !important;
+  color: #fff !important;
+  font-weight: 600;
+  text-align: center;
+}
+
+.comparison-table td {
+  vertical-align: middle;
+  padding: 8px;
+}
+
+.comparison-table tbody tr:nth-child(even) td {
+  background-color: #f2f6fa;
+}
+
+.comparison-table tbody tr:hover td {
+  background-color: #e6eef5;
+}
+
+.comparison-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.comparison-table td:not(:first-child) {
+  text-align: center;
+}
+
+/* Pill toggle styling */
+.toggle-pill {
+  display: inline-flex;
+  border-radius: 50px;
+  background: #e0e0e0;
+  padding: 3px;
+}
+
+.toggle-option {
+  border: none;
+  background: transparent;
+  padding: 6px 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: #0a2239;
+}
+
+.toggle-option:hover {
+  background: #d0d0d0;
+}
+
+.toggle-option.active {
+  background: #0a2239;
+  color: #fff;
+}
+
+.fade-in {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.2s forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Divider lines between figures */
+.section-break {
+  border: 0;
+  border-top: 4px solid #adb5bd;
+  margin: 1rem 0;
+}
+
+/* Side-by-side chart row styling */
+.chart-row {
+  display: flex;
+  gap: 10px;
+}
+
+.chart-row .chart-container {
+  flex: 1;
+  height: 360px !important;
+}
+
+#bump_chart_container {
+  height: 400px !important;
+}
+
+#improperfraud_ {
+  height: 350px !important;
+}
+
+#timeliness_chart_container {
+  height: 450px !important;
+}
