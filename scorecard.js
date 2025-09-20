@@ -11,8 +11,8 @@ const metricColors = {
   "Base Period Wages": "#ffd23b",
   "Other Eligibility Issues": "#c15fcf",
   "All Other Causes": "#ff7b93",
-  "Improper Payment Rate": "#2a9d8f",
-  "Fraud Rate": "#e76f51",
+  "Improper Payment Rate": "#1f77b4",
+  "Fraud Rate": "#ff7f0e",
 };
 
 // ------------------- Chart Renderers -------------------
@@ -171,24 +171,31 @@ function renderNonmonetaryChart(containerId, data) {
 }
 
 function renderImproperFraudChart(containerId, data) {
-  let chartDom = document.getElementById(containerId);
+  const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  let chart = echarts.init(chartDom);
+  const chart = echarts.init(chartDom);
 
   const years = data.years;
+  const alpThreshold = 10;
+
+  // Series with per-point coloring
   const seriesList = data.series.map((s) => ({
     name: s.name,
     type: "line",
     smooth: true,
     symbolSize: 8,
     emphasis: { focus: "series" },
-    lineStyle: { width: 3, color: metricColors[s.name] || undefined },
-    itemStyle: { color: metricColors[s.name] || undefined },
-    data: s.values,
+    lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
+    data: s.values.map((v) => ({
+      value: v,
+      itemStyle: {
+        color: v > alpThreshold ? "#e63946" : "#2a9d8f", // red fail / green pass
+      },
+    })),
   }));
 
-  let option = {
+  const option = {
     title: { text: "Improper Payment & Fraud Rates", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
@@ -199,16 +206,17 @@ function renderImproperFraudChart(containerId, data) {
       name: "Percent",
       axisLabel: { formatter: "{value}%" },
     },
-    series: seriesList.concat([
+    series: [
+      // ALP dashed reference line
       {
         name: "ALP (10%)",
         type: "line",
         symbol: "none",
         lineStyle: { type: "dashed", color: "red", width: 2 },
-        itemStyle: { color: "red" },
-        data: years.map(() => 10),
+        data: years.map(() => alpThreshold),
       },
-    ]),
+      ...seriesList,
+    ],
   };
 
   chart.setOption(option);
