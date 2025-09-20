@@ -329,11 +329,17 @@ function updateDashboard(baseYear, category) {
     ([name, value]) => ({ name, value })
   );
 
-  // Always update table for Program category
+  // Update table depending on category
   if (category === "program") {
     renderComparisonTable(
       "comparison_table_container",
-      ALLDATA[baseYear].table || [],
+      ALLDATA[baseYear].table_program || [],
+      baseYear
+    );
+  } else if (category === "benefit") {
+    renderComparisonTable(
+      "comparison_table_container",
+      ALLDATA[baseYear].table_benefit || [],
       baseYear
     );
   }
@@ -466,9 +472,15 @@ function switchView(view) {
   } else {
     document.getElementById("plots-view").style.display = "none";
     document.getElementById("table-view").style.display = "block";
+
+    const tableData =
+      currentCategory === "program"
+        ? ALLDATA[currentBaseYear].table_program
+        : ALLDATA[currentBaseYear].table_benefit;
+
     renderComparisonTable(
       "comparison_table_container",
-      ALLDATA[currentBaseYear].table,
+      tableData || [],
       currentBaseYear
     );
   }

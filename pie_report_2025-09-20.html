@@ -259,7 +259,7 @@ var ALLDATA = {
       "Other Eligibility Issues": 16.9,
       "All Other Causes": 5
     },
-    "table": [
+    "table_program": [
       {
         "Metric": "Work Search",
         "Current": 7.7,
@@ -307,6 +307,26 @@ var ALLDATA = {
         "Current": 5,
         "Previous": 15.1,
         "RelativeChange": -10.1
+      }
+    ],
+    "table_benefit": [
+      {
+        "Metric": "First Payment Timeliness (14 days)",
+        "Current": 72.5,
+        "Previous": 68.1,
+        "RelativeChange": 4.4
+      },
+      {
+        "Metric": "First Payment Timeliness (21 days)",
+        "Current": 62.7,
+        "Previous": 58.2,
+        "RelativeChange": 4.5
+      },
+      {
+        "Metric": "Nonmonetary Determination",
+        "Current": 93,
+        "Previous": 56,
+        "RelativeChange": 37
       }
     ],
     "bump": {
@@ -381,7 +401,7 @@ var ALLDATA = {
       "Other Eligibility Issues": 14.6,
       "All Other Causes": 14.1
     },
-    "table": [
+    "table_program": [
       {
         "Metric": "Work Search",
         "Current": 4.4,
@@ -429,6 +449,26 @@ var ALLDATA = {
         "Current": 14.1,
         "Previous": 5,
         "RelativeChange": 9.1
+      }
+    ],
+    "table_benefit": [
+      {
+        "Metric": "First Payment Timeliness (14 days)",
+        "Current": 76.1,
+        "Previous": 72.5,
+        "RelativeChange": 3.6
+      },
+      {
+        "Metric": "First Payment Timeliness (21 days)",
+        "Current": 69,
+        "Previous": 62.7,
+        "RelativeChange": 6.3
+      },
+      {
+        "Metric": "Nonmonetary Determination",
+        "Current": 62,
+        "Previous": 93,
+        "RelativeChange": -31
       }
     ],
     "bump": {
@@ -827,11 +867,17 @@ function updateDashboard(baseYear, category) {
     ([name, value]) => ({ name, value })
   );
 
-  // Always update table for Program category
+  // Update table depending on category
   if (category === "program") {
     renderComparisonTable(
       "comparison_table_container",
-      ALLDATA[baseYear].table || [],
+      ALLDATA[baseYear].table_program || [],
+      baseYear
+    );
+  } else if (category === "benefit") {
+    renderComparisonTable(
+      "comparison_table_container",
+      ALLDATA[baseYear].table_benefit || [],
       baseYear
     );
   }
@@ -964,9 +1010,15 @@ function switchView(view) {
   } else {
     document.getElementById("plots-view").style.display = "none";
     document.getElementById("table-view").style.display = "block";
+
+    const tableData =
+      currentCategory === "program"
+        ? ALLDATA[currentBaseYear].table_program
+        : ALLDATA[currentBaseYear].table_benefit;
+
     renderComparisonTable(
       "comparison_table_container",
-      ALLDATA[currentBaseYear].table,
+      tableData || [],
       currentBaseYear
     );
   }

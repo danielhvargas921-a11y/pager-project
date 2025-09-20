@@ -96,7 +96,7 @@ for (y in all_years) {
   rel <- round(as.numeric(proportions) - as.numeric(prev_prop), 1)
 
   rel[is.na(rel)] <- NA_real_
-  
+
   table_df <- data.frame(
   Metric = metrics_for_pie,
   Current = as.numeric(proportions),
@@ -104,6 +104,42 @@ for (y in all_years) {
   RelativeChange = rel,
   check.names = FALSE
 )
+
+# --- BENEFIT TABLE ---
+benefit_table_df <- NULL
+
+# Timeliness metrics
+t_vals <- annual_last_month(df_raw, y, year_range, metrics_timeliness)
+prev_t_vals <- annual_last_month(df_raw, y - 1, year_range, metrics_timeliness)
+if (!is.null(t_vals)) {
+  t_prev <- if (!is.null(prev_t_vals)) prev_t_vals else rep(NA_real_, length(metrics_timeliness))
+  t_rel <- round(as.numeric(t_vals) - as.numeric(t_prev), 1)
+  t_df <- data.frame(
+    Metric = metrics_timeliness,
+    Current = as.numeric(t_vals),
+    Previous = as.numeric(t_prev),
+    RelativeChange = t_rel,
+    check.names = FALSE
+  )
+  benefit_table_df <- rbind(benefit_table_df, t_df)
+}
+
+# Nonmonetary Determination
+nm_vals <- annual_last_month(df_raw, y, year_range, "Nonmonetary Determination")
+prev_nm_vals <- annual_last_month(df_raw, y - 1, year_range, "Nonmonetary Determination")
+if (!is.null(nm_vals)) {
+  nm_prev <- if (!is.null(prev_nm_vals)) prev_nm_vals else NA_real_
+  nm_rel <- round(as.numeric(nm_vals) - as.numeric(nm_prev), 1)
+  nm_df <- data.frame(
+    Metric = "Nonmonetary Determination",
+    Current = as.numeric(nm_vals),
+    Previous = as.numeric(nm_prev),
+    RelativeChange = nm_rel,
+    check.names = FALSE
+  )
+  benefit_table_df <- rbind(benefit_table_df, nm_df)
+}
+
 
 
   # --- BUMP/TOP-5 ---
@@ -168,7 +204,8 @@ for (y in all_years) {
   # assemble
   all_data[[as.character(y)]] <- list(
     pie = as.list(setNames(proportions, metrics_for_pie)),
-    table = table_df,
+    table_program = table_df,
+    table_benefit = benefit_table_df,
     bump = bump_data,
     timeliness = timeliness_data,
     improperfraud = improperfraud_data,
