@@ -1961,10 +1961,15 @@ async function exportToPDF() {
     container.style.width = "700px";
     container.style.height = "500px";
 
-    // Ã°Å¸â€˜â€° Special case: bump chart (make it wider like CSS does in browser)
+    // Special cases
     if (cfg.key === "bump") {
-      container.style.width = "1200px"; // extra wide
-      container.style.height = "400px"; // not too tall
+      container.style.width = "900px"; // narrower
+      container.style.height = "500px"; // keep height
+    }
+
+    if (cfg.key === "pie") {
+      container.style.width = "600px";
+      container.style.height = "350px";
     }
 
     container.id = cfg.key + "_export";
