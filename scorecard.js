@@ -1,7 +1,7 @@
 let charts = {};
 let currentBaseYear = null;
 let currentCategory = "program";
-let currentState = "US";
+let currentState = "AK";
 
 const metricColors = {
   "Work Search": "#3b8ee2",

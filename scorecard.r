@@ -217,7 +217,7 @@ alldata_js <- paste0(
 )
 
 # ---------------- Export STATE_CODES ----------------
-state_list <- sort(unique(df_raw$State))
+state_list <- sort(setdiff(unique(df_raw$State), "US"))
 states_js <- paste0(
   "<script>\nvar STATE_CODES = ",
   jsonlite::toJSON(state_list, auto_unbox = TRUE, pretty = FALSE),
