@@ -573,3 +573,45 @@ function switchView(view) {
     );
   }
 }
+
+// ------------------- Export PDF -------------------
+async function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p", "mm", "a4");
+  const pageWidth = pdf.internal.pageSize.getWidth();
+
+  // --- Grab Plots view ---
+  const plotsView = document.getElementById("plots-view");
+  plotsView.style.display = "block"; // make sure visible
+  const plotsCanvas = await html2canvas(plotsView, { scale: 2 });
+  const plotsImg = plotsCanvas.toDataURL("image/png");
+
+  let plotsHeight = (plotsCanvas.height * pageWidth) / plotsCanvas.width;
+  pdf.addImage(plotsImg, "PNG", 0, 0, pageWidth, plotsHeight);
+
+  // --- Grab Table view ---
+  const tableView = document.getElementById("table-view");
+  tableView.style.display = "block"; // make sure visible
+  const tableCanvas = await html2canvas(tableView, { scale: 2 });
+  const tableImg = tableCanvas.toDataURL("image/png");
+
+  let tableHeight = (tableCanvas.height * pageWidth) / tableCanvas.width;
+
+  pdf.addPage();
+  pdf.addImage(tableImg, "PNG", 0, 0, pageWidth, tableHeight);
+
+  // --- Restore toggle state ---
+  const activeView = document
+    .querySelector("#viewToggle .toggle-option.active")
+    .getAttribute("data-view");
+  if (activeView === "plots") {
+    tableView.style.display = "none";
+  } else {
+    plotsView.style.display = "none";
+  }
+
+  pdf.save("UI_Overpayments_Report.pdf");
+}
+
+// Hook up to the button
+document.getElementById("exportPDFBtn").addEventListener("click", exportToPDF);
