@@ -43,14 +43,12 @@
   padding: 40px 50px;
 }
 
-/* Larger screens */
 @media (min-width: 1600px) {
   .section {
     max-width: 1200px;
   }
 }
 
-/* Small laptops/tablets */
 @media (max-width: 992px) {
   .section {
     width: 100%;
@@ -133,6 +131,7 @@
   color: #fff;
 }
 
+/* Animations */
 .fade-in {
   opacity: 0;
   transform: translateY(10px);
@@ -168,7 +167,6 @@
   height: 400px !important;
 }
 
-/* was #improperfraud_ */
 #improperfraud_chart_container {
   height: 350px !important;
 }
@@ -185,12 +183,16 @@
 }
 
 .sidebar-toggle-btn {
+  display: block;
+  width: 100%; /* full width so buttons never shift */
+  box-sizing: border-box; /* include border in width */
   background-color: #0a1a33; /* darker navy */
   color: white;
-  border: none;
+  border: 2px solid transparent; /* reserve space for border */
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 12px 16px; /* larger click area */
   text-align: center;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
@@ -203,7 +205,12 @@
 .sidebar-toggle-btn.active {
   background-color: white;
   color: #0a1a33; /* navy text when active */
-  border: 2px solid #0a1a33;
+  border-color: #0a1a33; /* show border instead of adding it */
+}
+
+#state_selector.hidden {
+  visibility: hidden; /* hides it but keeps space */
+  pointer-events: none; /* prevents interaction while hidden */
 }
 </style>
     <style>
@@ -247,12 +254,12 @@
         <div id="category_selector"></div>
       </div>
 
-      <!-- State (hidden by default) -->
-      <div class="mt-3" id="state_selector" style="display: none">
+      <!-- State selector -->
+      <div class="mt-3" id="state_selector">
         <label for="stateDropdown" class="form-label fw-bold"
           >Select State:</label
         >
-        <div id="stateDropdownWrapper"></div>
+        <select id="stateDropdown" class="form-select form-select-sm"></select>
       </div>
 
       <!-- Reporting period -->
@@ -1510,14 +1517,9 @@ function renderStateSelector(containerId, stateCodes, defaultState = "AK") {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  // Look for the wrapper inside the container
-  const wrapper = container.querySelector("#stateDropdownWrapper");
-  if (!wrapper) return;
+  const select = document.getElementById("stateDropdown");
 
-  const select = document.createElement("select");
-  select.className = "form-select form-select-sm";
-  select.id = "stateDropdown";
-
+  select.innerHTML = "";
   stateCodes.forEach((code) => {
     const opt = document.createElement("option");
     opt.value = code;
@@ -1525,9 +1527,6 @@ function renderStateSelector(containerId, stateCodes, defaultState = "AK") {
     if (code === defaultState) opt.selected = true;
     select.appendChild(opt);
   });
-
-  wrapper.innerHTML = "";
-  wrapper.appendChild(select);
 
   select.addEventListener("change", () => {
     currentState = select.value;
@@ -1543,23 +1542,22 @@ function setupScopeToggle() {
 
   // Default = National
   nationalBtn.classList.add("active");
-  stateSelector.style.display = "none";
+  stateBtn.classList.remove("active");
+  stateSelector.classList.add("hidden");
 
   nationalBtn.addEventListener("click", () => {
     nationalBtn.classList.add("active");
     stateBtn.classList.remove("active");
-    stateSelector.style.display = "none";
-    currentState = "US"; // National view
+    stateSelector.classList.add("hidden");
+    currentState = "US";
     updateDashboard(currentBaseYear, currentCategory, currentState);
   });
 
   stateBtn.addEventListener("click", () => {
     stateBtn.classList.add("active");
     nationalBtn.classList.remove("active");
-    stateSelector.style.display = "block";
-    // Trigger refresh with currently selected state
-    const selected = document.getElementById("stateDropdown").value;
-    currentState = selected;
+    stateSelector.classList.remove("hidden");
+    currentState = document.getElementById("stateDropdown").value;
     updateDashboard(currentBaseYear, currentCategory, currentState);
   });
 }

@@ -338,14 +338,9 @@ function renderStateSelector(containerId, stateCodes, defaultState = "AK") {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  // Look for the wrapper inside the container
-  const wrapper = container.querySelector("#stateDropdownWrapper");
-  if (!wrapper) return;
+  const select = document.getElementById("stateDropdown");
 
-  const select = document.createElement("select");
-  select.className = "form-select form-select-sm";
-  select.id = "stateDropdown";
-
+  select.innerHTML = "";
   stateCodes.forEach((code) => {
     const opt = document.createElement("option");
     opt.value = code;
@@ -353,9 +348,6 @@ function renderStateSelector(containerId, stateCodes, defaultState = "AK") {
     if (code === defaultState) opt.selected = true;
     select.appendChild(opt);
   });
-
-  wrapper.innerHTML = "";
-  wrapper.appendChild(select);
 
   select.addEventListener("change", () => {
     currentState = select.value;
@@ -371,23 +363,22 @@ function setupScopeToggle() {
 
   // Default = National
   nationalBtn.classList.add("active");
-  stateSelector.style.display = "none";
+  stateBtn.classList.remove("active");
+  stateSelector.classList.add("hidden");
 
   nationalBtn.addEventListener("click", () => {
     nationalBtn.classList.add("active");
     stateBtn.classList.remove("active");
-    stateSelector.style.display = "none";
-    currentState = "US"; // National view
+    stateSelector.classList.add("hidden");
+    currentState = "US";
     updateDashboard(currentBaseYear, currentCategory, currentState);
   });
 
   stateBtn.addEventListener("click", () => {
     stateBtn.classList.add("active");
     nationalBtn.classList.remove("active");
-    stateSelector.style.display = "block";
-    // Trigger refresh with currently selected state
-    const selected = document.getElementById("stateDropdown").value;
-    currentState = selected;
+    stateSelector.classList.remove("hidden");
+    currentState = document.getElementById("stateDropdown").value;
     updateDashboard(currentBaseYear, currentCategory, currentState);
   });
 }
