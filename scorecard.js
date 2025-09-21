@@ -334,9 +334,13 @@ function renderCategorySelector(containerId) {
   });
 }
 
-function renderStateSelector(containerId, stateCodes, defaultState = "US") {
+function renderStateSelector(containerId, stateCodes, defaultState = "AK") {
   const container = document.getElementById(containerId);
   if (!container) return;
+
+  // Look for the wrapper inside the container
+  const wrapper = container.querySelector("#stateDropdownWrapper");
+  if (!wrapper) return;
 
   const select = document.createElement("select");
   select.className = "form-select form-select-sm";
@@ -345,13 +349,13 @@ function renderStateSelector(containerId, stateCodes, defaultState = "US") {
   stateCodes.forEach((code) => {
     const opt = document.createElement("option");
     opt.value = code;
-    opt.textContent = code; // Use abbreviations only
+    opt.textContent = code;
     if (code === defaultState) opt.selected = true;
     select.appendChild(opt);
   });
 
-  container.innerHTML = "";
-  container.appendChild(select);
+  wrapper.innerHTML = "";
+  wrapper.appendChild(select);
 
   select.addEventListener("change", () => {
     currentState = select.value;

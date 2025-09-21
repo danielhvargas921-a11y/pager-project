@@ -164,3 +164,32 @@
 #timeliness_chart_container {
   height: 450px !important;
 }
+
+/* Sidebar toggle buttons stacked vertically */
+.sidebar-mode-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* space between buttons */
+}
+
+.sidebar-toggle-btn {
+  background-color: #0a1a33; /* darker navy */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #13294b; /* slightly lighter navy on hover */
+}
+
+.sidebar-toggle-btn.active {
+  background-color: white;
+  color: #0a1a33; /* navy text when active */
+  border: 2px solid #0a1a33;
+}
