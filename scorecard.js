@@ -259,7 +259,7 @@ function renderComparisonTable(containerId, tableData, baseYear) {
           : "NA";
 
       return `
-<tr class="fade-in" style="animation-delay:${idx * 0.3}s">
+<tr>
   <td>${row.Metric}</td>
   <td>${currTxt}</td>
   <td>${prevTxt}</td>
@@ -576,29 +576,48 @@ function switchView(view) {
 
 // ------------------- Export PDF -------------------
 async function exportToPDF() {
+  document.body.classList.add("exporting"); // apply PDF styles
+
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF("p", "mm", "a4");
   const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
 
   // --- Grab Plots view ---
   const plotsView = document.getElementById("plots-view");
-  plotsView.style.display = "block"; // make sure visible
+  plotsView.style.display = "block"; // ensure visible
   const plotsCanvas = await html2canvas(plotsView, { scale: 2 });
   const plotsImg = plotsCanvas.toDataURL("image/png");
 
-  let plotsHeight = (plotsCanvas.height * pageWidth) / plotsCanvas.width;
-  pdf.addImage(plotsImg, "PNG", 0, 0, pageWidth, plotsHeight);
+  // Scale to fit *within page* and keep centered
+  let plotsRatio = plotsCanvas.width / plotsCanvas.height;
+  let plotsW = pageWidth - 20; // leave 10mm margin each side
+  let plotsH = plotsW / plotsRatio;
+  if (plotsH > pageHeight - 20) {
+    plotsH = pageHeight - 20;
+    plotsW = plotsH * plotsRatio;
+  }
+  let plotsX = (pageWidth - plotsW) / 2;
+  let plotsY = 10; // top margin
+  pdf.addImage(plotsImg, "PNG", plotsX, plotsY, plotsW, plotsH);
 
   // --- Grab Table view ---
   const tableView = document.getElementById("table-view");
-  tableView.style.display = "block"; // make sure visible
+  tableView.style.display = "block"; // ensure visible
   const tableCanvas = await html2canvas(tableView, { scale: 2 });
   const tableImg = tableCanvas.toDataURL("image/png");
 
-  let tableHeight = (tableCanvas.height * pageWidth) / tableCanvas.width;
-
+  let tableRatio = tableCanvas.width / tableCanvas.height;
+  let tableW = pageWidth - 20;
+  let tableH = tableW / tableRatio;
+  if (tableH > pageHeight - 20) {
+    tableH = pageHeight - 20;
+    tableW = tableH * tableRatio;
+  }
+  let tableX = (pageWidth - tableW) / 2;
+  let tableY = 10;
   pdf.addPage();
-  pdf.addImage(tableImg, "PNG", 0, 0, pageWidth, tableHeight);
+  pdf.addImage(tableImg, "PNG", tableX, tableY, tableW, tableH);
 
   // --- Restore toggle state ---
   const activeView = document
@@ -610,8 +629,10 @@ async function exportToPDF() {
     plotsView.style.display = "none";
   }
 
+  document.body.classList.remove("exporting"); // clean up
+
   pdf.save("UI_Overpayments_Report.pdf");
 }
 
-// Hook up to the button
+// Hook up export button
 document.getElementById("exportPDFBtn").addEventListener("click", exportToPDF);

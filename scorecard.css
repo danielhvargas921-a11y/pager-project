@@ -283,3 +283,36 @@
   visibility: hidden;
   pointer-events: none;
 }
+
+/* ===========================
+   Export / PDF Styling
+   =========================== */
+body.exporting #sidebar {
+  display: none !important;
+}
+
+body.exporting #main-content {
+  margin-left: 0 !important;
+  padding: 0 !important;
+  background: #fff !important;
+}
+
+body.exporting #report-container {
+  box-shadow: none !important;
+  border: none !important;
+  margin: 0 auto !important;
+  padding: 20px 30px !important;
+  background: #fff !important;
+}
+
+/* Keep header background + title */
+body.exporting #page-header {
+  background-color: #0a2239 !important;
+  color: #fff !important;
+}
+
+/* Hide only buttons in export */
+body.exporting #exportPDFBtn,
+body.exporting #page-header .toggle-pill {
+  display: none !important;
+}
