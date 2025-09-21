@@ -1334,19 +1334,35 @@ function renderPieChart(containerId, pieData, exportMode = false) {
   let chart = echarts.init(chartDom, null, { renderer: "svg" });
 
   let option = {
-    animation: !exportMode, // disable animation in export
+    animation: !exportMode,
     title: { text: "Root Causes of Overpayments", left: "center" },
     tooltip: { trigger: "item", formatter: "{b}: {c}%" },
     series: [
       {
         type: "pie",
-        radius: ["35%", "75%"],
+        radius: exportMode ? ["30%", "65%"] : ["35%", "75%"], // slightly smaller donut in export
         center: ["50%", "55%"],
         data: pieData.map((d) => ({
           ...d,
           itemStyle: { color: metricColors[d.name] || "#999" },
         })),
-        label: { formatter: "{b}: {c}%", fontSize: 12 },
+        label: {
+          show: true, // ensure labels are forced visible
+          formatter: "{b}: {c}%",
+          fontSize: exportMode ? 10 : 12,
+          color: "#000",
+          position: "outside",
+          overflow: "break", // try to wrap long text
+          alignTo: "labelLine",
+          distanceToLabelLine: 2,
+        },
+        labelLine: {
+          show: true,
+          length: exportMode ? 20 : 15,
+          length2: exportMode ? 15 : 10,
+          lineStyle: { color: "#666" },
+        },
+        avoidLabelOverlap: false, // disable auto-hiding
       },
     ],
   };
