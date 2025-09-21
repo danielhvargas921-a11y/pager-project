@@ -1,7 +1,7 @@
 let charts = {};
 let currentBaseYear = null;
 let currentCategory = "program";
-let currentState = "AK";
+let currentState = "US";
 
 const metricColors = {
   "Work Search": "#3b8ee2",
@@ -393,12 +393,16 @@ function updateDashboard(baseYear, category, stateCode = "US") {
 
   const stateData = ALLDATA[stateCode][baseYear];
 
-  // --- Update page title dynamically (using HTML entity for em dash) ---
+  // --- Update page title dynamically with two lines ---
   const catLabel =
     category === "program" ? "Program Integrity Measures" : "Benefit Measures";
-  document.getElementById(
-    "reportTitle"
-  ).innerHTML = `UI Overpayments Report &mdash; ${baseYear} (${catLabel}, ${stateCode})`;
+
+  const stateLabel = stateCode === "US" ? "National" : stateCode;
+
+  document.getElementById("reportTitle").innerHTML = `
+  <div class="title-main">UI Overpayments Report &mdash; ${baseYear}</div>
+  <div class="title-sub">(${stateLabel}, ${catLabel})</div>
+`;
 
   // --- Pie data ---
   const pieData = Object.entries(stateData.pie || {}).map(([name, value]) => ({
