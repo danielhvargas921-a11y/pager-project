@@ -32,21 +32,28 @@
   min-height: 100vh;
 }
 
-/* Sections (report page style) */
-.section {
-  margin: 10px auto;
+/* Container to center header + section together */
+#report-container {
+  margin: 0 auto;
   width: 95%;
   max-width: 1100px;
-  background: #fff;
-  border: 1px solid #dee2e6; /* single clean border */
-  border-radius: 8px;
-  padding: 40px 50px;
 }
 
 @media (min-width: 1600px) {
-  .section {
+  #report-container {
     max-width: 1200px;
   }
+}
+
+/* Section styling (report body) */
+.section {
+  margin: 0 auto 10px auto;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 40px 50px;
 }
 
 @media (max-width: 992px) {
@@ -66,7 +73,7 @@
   width: 100% !important;
   height: 340px !important;
   margin: 0 auto 30px auto;
-  background-color: transparent; /* no extra boxes */
+  background-color: transparent;
 }
 
 .chart-small {
@@ -179,18 +186,18 @@
 .sidebar-mode-toggle {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* space between buttons */
+  gap: 10px;
 }
 
 .sidebar-toggle-btn {
   display: block;
-  width: 100%; /* full width so buttons never shift */
-  box-sizing: border-box; /* include border in width */
-  background-color: #0a1a33; /* darker navy */
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #0a1a33;
   color: white;
-  border: 2px solid transparent; /* reserve space for border */
+  border: 2px solid transparent;
   border-radius: 6px;
-  padding: 12px 16px; /* larger click area */
+  padding: 12px 16px;
   text-align: center;
   font-size: 1rem;
   font-weight: 600;
@@ -199,20 +206,21 @@
 }
 
 .sidebar-toggle-btn:hover {
-  background-color: #13294b; /* slightly lighter navy on hover */
+  background-color: #13294b;
 }
 
 .sidebar-toggle-btn.active {
   background-color: white;
-  color: #0a1a33; /* navy text when active */
-  border-color: #0a1a33; /* show border instead of adding it */
+  color: #0a1a33;
+  border-color: #0a1a33;
 }
 
 #state_selector.hidden {
-  visibility: hidden; /* hides it but keeps space */
-  pointer-events: none; /* prevents interaction while hidden */
+  visibility: hidden;
+  pointer-events: none;
 }
 
+/* Report title styles */
 #reportTitle {
   text-align: center;
   margin: 0;
@@ -222,20 +230,61 @@
 #reportTitle .title-main {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #0a2239; /* theme navy */
+  color: #fff;
 }
 
 #reportTitle .title-sub {
   font-size: 1rem;
   font-weight: 400;
-  color: #555; /* softer gray */
+  color: #ddd;
   margin-top: 4px;
+}
+
+/* Page header (navy banner aligned with section) */
+#page-header {
+  width: 100%;
+  background-color: #0a2239;
+  color: #fff;
+  padding: 20px;
+  border-radius: 8px 8px 0 0;
+  position: relative;
+}
+
+/* Position toggle pill inside header */
+#page-header .toggle-pill {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 </style>
     <style>
-      /* ensures room for toggle */
-      .section-header {
-        min-height: 44px;
+      /* Page-level header (full-width navy bar) */
+      #page-header {
+        width: 100%;
+        background-color: #0a2239;
+        color: #fff;
+        padding: 20px;
+        border-bottom: 4px solid #13294b; /* accent line */
+        margin: 0;
+      }
+
+      #page-header h3 {
+        color: #fff;
+        font-weight: 600;
+      }
+
+      #page-header .toggle-pill {
+        background: #13294b;
+      }
+
+      #page-header .toggle-option {
+        color: #fff;
+      }
+
+      #page-header .toggle-option.active {
+        background: #fff;
+        color: #0a2239;
       }
     </style>
   </head>
@@ -284,19 +333,14 @@
 
     <!-- Main content -->
     <div id="main-content" class="p-4">
-      <!-- Section wrapper -->
-      <div class="section">
-        <!-- Title + toggle row -->
-        <div
-          class="section-header d-flex align-items-center mb-3 position-relative"
-        >
-          <h3 id="reportTitle" class="m-0 w-100 text-center">
-            UI Overpayments Report
-          </h3>
-          <div
-            class="toggle-pill position-absolute end-0 top-50 translate-middle-y"
-            id="viewToggle"
-          >
+      <div id="report-container">
+        <!-- Header -->
+        <div id="page-header">
+          <div id="reportTitle" class="text-center">
+            <div class="title-main">UI Overpayments Report â€” 2025</div>
+            <div class="title-sub">(National, Program Integrity Measures)</div>
+          </div>
+          <div class="toggle-pill" id="viewToggle">
             <button class="toggle-option active" data-view="plots">
               Plots
             </button>
@@ -304,8 +348,10 @@
           </div>
         </div>
 
-        <!-- Injected sections (from R) -->
-        <div class="section bg-white shadow-sm rounded metric-section" id="section_dashboard">
+        <!-- Section wrapper -->
+        <div class="section">
+          <!-- Injected sections (from R) -->
+          <div class="section bg-white shadow-sm rounded metric-section" id="section_dashboard">
 <!-- Plots view -->
 <div id="plots-view">
 <div id="pie_chart_container" class="chart-container"></div>
@@ -319,6 +365,7 @@
 <div id="comparison_table_container"></div>
 </div>
 </div>
+        </div>
       </div>
     </div>
 

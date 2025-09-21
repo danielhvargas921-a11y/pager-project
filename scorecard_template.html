@@ -11,9 +11,32 @@
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <!--INLINE_CSS-->
     <style>
-      /* ensures room for toggle */
-      .section-header {
-        min-height: 44px;
+      /* Page-level header (full-width navy bar) */
+      #page-header {
+        width: 100%;
+        background-color: #0a2239;
+        color: #fff;
+        padding: 20px;
+        border-bottom: 4px solid #13294b; /* accent line */
+        margin: 0;
+      }
+
+      #page-header h3 {
+        color: #fff;
+        font-weight: 600;
+      }
+
+      #page-header .toggle-pill {
+        background: #13294b;
+      }
+
+      #page-header .toggle-option {
+        color: #fff;
+      }
+
+      #page-header .toggle-option.active {
+        background: #fff;
+        color: #0a2239;
       }
     </style>
   </head>
@@ -62,19 +85,14 @@
 
     <!-- Main content -->
     <div id="main-content" class="p-4">
-      <!-- Section wrapper -->
-      <div class="section">
-        <!-- Title + toggle row -->
-        <div
-          class="section-header d-flex align-items-center mb-3 position-relative"
-        >
-          <h3 id="reportTitle" class="m-0 w-100 text-center">
-            UI Overpayments Report
-          </h3>
-          <div
-            class="toggle-pill position-absolute end-0 top-50 translate-middle-y"
-            id="viewToggle"
-          >
+      <div id="report-container">
+        <!-- Header -->
+        <div id="page-header">
+          <div id="reportTitle" class="text-center">
+            <div class="title-main">UI Overpayments Report — 2025</div>
+            <div class="title-sub">(National, Program Integrity Measures)</div>
+          </div>
+          <div class="toggle-pill" id="viewToggle">
             <button class="toggle-option active" data-view="plots">
               Plots
             </button>
@@ -82,8 +100,11 @@
           </div>
         </div>
 
-        <!-- Injected sections (from R) -->
-        <!--METRIC_SECTIONS-->
+        <!-- Section wrapper -->
+        <div class="section">
+          <!-- Injected sections (from R) -->
+          <!--METRIC_SECTIONS-->
+        </div>
       </div>
     </div>
 
