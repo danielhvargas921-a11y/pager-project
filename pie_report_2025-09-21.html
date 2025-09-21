@@ -1919,6 +1919,7 @@ async function exportToPDF() {
   document.body.appendChild(exportDiv);
 
   const stateData = ALLDATA[currentState][currentBaseYear];
+
   const chartConfigs = [
     {
       key: "pie",
@@ -1946,11 +1947,31 @@ async function exportToPDF() {
     },
   ];
 
+  // Map chart keys to headers
+  const headerMap = {
+    pie: "Root Causes of Overpayments",
+    bump: "Top 5 Causes of Overpayment",
+    improperfraud: "Improper Payment & Fraud Rates",
+    timeliness: "First Payment Timeliness (FPT)",
+    nonmonetary: "Nonmonetary Determinations",
+  };
+
   let yOffset = 40;
 
   for (let i = 0; i < chartConfigs.length; i++) {
     const cfg = chartConfigs[i];
     if (!cfg.data) continue;
+
+    // Add header above each chart
+    const header = headerMap[cfg.key];
+    if (header) {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.setTextColor(10, 34, 57); // navy color
+      pdf.text(header, pageWidth / 2, yOffset, { align: "center" });
+      yOffset += 10; // spacing below header
+      pdf.setTextColor(0, 0, 0); // reset text color
+    }
 
     const container = document.createElement("div");
 
@@ -1960,8 +1981,8 @@ async function exportToPDF() {
 
     // Special cases
     if (cfg.key === "bump") {
-      container.style.width = "900px"; // narrower
-      container.style.height = "500px"; // keep height
+      container.style.width = "900px";
+      container.style.height = "500px";
     }
 
     if (cfg.key === "pie") {
@@ -2000,7 +2021,7 @@ async function exportToPDF() {
       height: drawH,
     });
 
-    yOffset += drawH + 15;
+    yOffset += drawH + 20; // spacing between charts
 
     if (cfg.key === "bump") {
       // After bump chart, force next chart onto new page
