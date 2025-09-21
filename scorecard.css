@@ -316,3 +316,10 @@ body.exporting #exportPDFBtn,
 body.exporting #page-header .toggle-pill {
   display: none !important;
 }
+
+.chart-block h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-weight: 600;
+  color: #0a2239;
+}

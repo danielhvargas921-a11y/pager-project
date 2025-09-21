@@ -28,7 +28,6 @@ function renderPieChart(containerId, pieData, exportMode = false) {
 
   let option = {
     animation: !exportMode,
-    title: { text: "Root Causes of Overpayments", left: "center" },
     tooltip: { trigger: "item", formatter: "{b}: {c}%" },
     series: [
       {
@@ -84,7 +83,6 @@ function renderBumpChart(containerId, bumpData, exportMode = false) {
 
   let option = {
     animation: !exportMode,
-    title: { text: "Top 5 Causes of Overpayment", left: "center" },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
     grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
@@ -125,7 +123,6 @@ function renderTimelinessChart(containerId, data, exportMode = false) {
 
   const option = {
     animation: !exportMode,
-    title: { text: "First Payment Timeliness (FPT)", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
     grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
@@ -175,7 +172,6 @@ function renderNonmonetaryChart(containerId, data, exportMode = false) {
 
   const option = {
     animation: !exportMode,
-    title: { text: "Nonmonetary Determination", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
     grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
@@ -225,7 +221,6 @@ function renderImproperFraudChart(containerId, data, exportMode = false) {
 
   const option = {
     animation: !exportMode,
-    title: { text: "Improper Payment & Fraud Rates", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
     grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
@@ -409,58 +404,35 @@ function updateDashboard(baseYear, category, stateCode = "US") {
   // --- Update page title dynamically with two lines ---
   const catLabel =
     category === "program" ? "Program Integrity Measures" : "Benefit Measures";
-
   const stateLabel = stateCode === "US" ? "National" : stateCode;
 
   document.getElementById("reportTitle").innerHTML = `
-  <div class="title-main">UI Overpayments Report &mdash; ${baseYear}</div>
-  <div class="title-sub">(${stateLabel}, ${catLabel})</div>
-`;
+    <div class="title-main">UI Overpayments Report &mdash; ${baseYear}</div>
+    <div class="title-sub">(${stateLabel}, ${catLabel})</div>
+  `;
 
-  // --- Pie data ---
+  // --- Toggle chart blocks ---
+  document.querySelectorAll(".chart-block").forEach((block) => {
+    block.style.display = "none";
+  });
+  document
+    .querySelectorAll(`.chart-block[data-category='${category}']`)
+    .forEach((block) => {
+      block.style.display = "block";
+    });
+
+  // --- Build pie data ---
   const pieData = Object.entries(stateData.pie || {}).map(([name, value]) => ({
     name,
     value,
   }));
 
-  // Update table depending on category
-  if (category === "program") {
-    renderComparisonTable(
-      "comparison_table_container",
-      stateData.table_program || [],
-      baseYear
-    );
-  } else if (category === "benefit") {
-    renderComparisonTable(
-      "comparison_table_container",
-      stateData.table_benefit || [],
-      baseYear
-    );
-  }
-
   // Build the 6-year window (baseYear - 5 through baseYear)
   const yearsRange = [];
   for (let y = baseYear - 5; y <= baseYear; y++) yearsRange.push(y);
 
-  // Hide all plots first
-  [
-    "pie_chart_container",
-    "bump_chart_container",
-    "improperfraud_chart_container",
-    "timeliness_chart_container",
-    "nonmonetary_chart_container",
-  ].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "none";
-  });
-
+  // --- Render charts depending on category ---
   if (category === "program") {
-    // Show program-related charts
-    document.getElementById("pie_chart_container").style.display = "block";
-    document.getElementById("bump_chart_container").style.display = "block";
-    document.getElementById("improperfraud_chart_container").style.display =
-      "block";
-
     renderPieChart("pie_chart_container", pieData);
 
     if (stateData.bump) {
@@ -491,12 +463,6 @@ function updateDashboard(baseYear, category, stateCode = "US") {
       renderImproperFraudChart("improperfraud_chart_container", ifData);
     }
   } else if (category === "benefit") {
-    // Show benefit-related charts
-    document.getElementById("timeliness_chart_container").style.display =
-      "block";
-    document.getElementById("nonmonetary_chart_container").style.display =
-      "block";
-
     if (stateData.timeliness) {
       const timelinessData = {
         years: yearsRange,

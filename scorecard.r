@@ -245,18 +245,42 @@ today <- Sys.Date()
 
 section_html <- glue('
 <div class="section bg-white shadow-sm rounded metric-section" id="section_dashboard">
-<!-- Plots view -->
-<div id="plots-view">
-<div id="pie_chart_container" class="chart-container"></div>
-<div id="bump_chart_container" class="chart-container"></div>
-<div id="improperfraud_chart_container" class="chart-container"></div>
-<div id="timeliness_chart_container" class="chart-container"></div>
-<div id="nonmonetary_chart_container" class="chart-container"></div>
-</div>
-<!-- Table view -->
-<div id="table-view" style="display:none">
-<div id="comparison_table_container"></div>
-</div>
+  <!-- Plots view -->
+  <div id="plots-view">
+
+    <!-- Program Integrity Measures -->
+    <div class="chart-block" data-category="program">
+      <h3>Root Causes of Overpayments</h3>
+      <div id="pie_chart_container" class="chart-container"></div>
+    </div>
+
+    <div class="chart-block" data-category="program">
+      <h3>Top 5 Causes of Overpayment</h3>
+      <div id="bump_chart_container" class="chart-container"></div>
+    </div>
+
+    <div class="chart-block" data-category="program">
+      <h3>Improper Payment & Fraud Rates</h3>
+      <div id="improperfraud_chart_container" class="chart-container"></div>
+    </div>
+
+    <!-- Benefit Measures -->
+    <div class="chart-block" data-category="benefit">
+      <h3>First Payment Timeliness (FPT)</h3>
+      <div id="timeliness_chart_container" class="chart-container"></div>
+    </div>
+
+    <div class="chart-block" data-category="benefit">
+      <h3>Nonmonetary Determinations</h3>
+      <div id="nonmonetary_chart_container" class="chart-container"></div>
+    </div>
+
+  </div>
+
+  <!-- Table view -->
+  <div id="table-view" style="display:none">
+    <div id="comparison_table_container"></div>
+  </div>
 </div>
 ')
 
