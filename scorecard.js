@@ -576,60 +576,74 @@ function switchView(view) {
 
 // ------------------- Export PDF -------------------
 async function exportToPDF() {
-  document.body.classList.add("exporting"); // apply PDF styles
+  document.body.classList.add("exporting");
 
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF("p", "mm", "a4");
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
-  // --- Grab Plots view ---
+  const marginX = 10; // left/right margin
+  const marginY = 10; // top margin
+
+  // --- Capture header once ---
+  const headerEl = document.getElementById("page-header");
+  const headerCanvas = await html2canvas(headerEl, { scale: 2, useCORS: true });
+  const headerImg = headerCanvas.toDataURL("image/png");
+
+  let headerW = pageWidth - 2 * marginX;
+  let headerH = (headerCanvas.height * headerW) / headerCanvas.width;
+
+  // --- Page 1: Plots ---
   const plotsView = document.getElementById("plots-view");
-  plotsView.style.display = "block"; // ensure visible
-  const plotsCanvas = await html2canvas(plotsView, { scale: 2 });
+  plotsView.style.display = "block";
+  const plotsCanvas = await html2canvas(plotsView, { scale: 2, useCORS: true });
   const plotsImg = plotsCanvas.toDataURL("image/png");
 
-  // Scale to fit *within page* and keep centered
-  let plotsRatio = plotsCanvas.width / plotsCanvas.height;
-  let plotsW = pageWidth - 20; // leave 10mm margin each side
-  let plotsH = plotsW / plotsRatio;
-  if (plotsH > pageHeight - 20) {
-    plotsH = pageHeight - 20;
-    plotsW = plotsH * plotsRatio;
+  // Place header
+  pdf.addImage(headerImg, "PNG", marginX, marginY, headerW, headerH);
+
+  // Place plots under header, aligned with same margins
+  let plotsW = pageWidth - 2 * marginX;
+  let plotsH = (plotsCanvas.height * plotsW) / plotsCanvas.width;
+  if (plotsH > pageHeight - headerH - 2 * marginY) {
+    plotsH = pageHeight - headerH - 2 * marginY;
+    plotsW = (plotsCanvas.width * plotsH) / plotsCanvas.height;
   }
-  let plotsX = (pageWidth - plotsW) / 2;
-  let plotsY = 10; // top margin
+  let plotsX = marginX;
+  let plotsY = marginY + headerH + 5;
   pdf.addImage(plotsImg, "PNG", plotsX, plotsY, plotsW, plotsH);
 
-  // --- Grab Table view ---
+  // --- Page 2: Table ---
   const tableView = document.getElementById("table-view");
-  tableView.style.display = "block"; // ensure visible
-  const tableCanvas = await html2canvas(tableView, { scale: 2 });
+  tableView.style.display = "block";
+  const tableCanvas = await html2canvas(tableView, { scale: 2, useCORS: true });
   const tableImg = tableCanvas.toDataURL("image/png");
 
-  let tableRatio = tableCanvas.width / tableCanvas.height;
-  let tableW = pageWidth - 20;
-  let tableH = tableW / tableRatio;
-  if (tableH > pageHeight - 20) {
-    tableH = pageHeight - 20;
-    tableW = tableH * tableRatio;
-  }
-  let tableX = (pageWidth - tableW) / 2;
-  let tableY = 10;
   pdf.addPage();
+  pdf.addImage(headerImg, "PNG", marginX, marginY, headerW, headerH);
+
+  let tableW = pageWidth - 2 * marginX;
+  let tableH = (tableCanvas.height * tableW) / tableCanvas.width;
+  if (tableH > pageHeight - headerH - 2 * marginY) {
+    tableH = pageHeight - headerH - 2 * marginY;
+    tableW = (tableCanvas.width * tableH) / tableCanvas.height;
+  }
+  let tableX = marginX;
+  let tableY = marginY + headerH + 5;
   pdf.addImage(tableImg, "PNG", tableX, tableY, tableW, tableH);
 
   // --- Restore toggle state ---
   const activeView = document
     .querySelector("#viewToggle .toggle-option.active")
-    .getAttribute("data-view");
+    ?.getAttribute("data-view");
   if (activeView === "plots") {
     tableView.style.display = "none";
   } else {
     plotsView.style.display = "none";
   }
 
-  document.body.classList.remove("exporting"); // clean up
+  document.body.classList.remove("exporting");
 
   pdf.save("UI_Overpayments_Report.pdf");
 }

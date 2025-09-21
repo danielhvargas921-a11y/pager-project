@@ -301,7 +301,7 @@ body.exporting #report-container {
   box-shadow: none !important;
   border: none !important;
   margin: 0 auto !important;
-  padding: 20px 30px !important;
+  padding: 0 !important; /* <-- removed padding */
   background: #fff !important;
 }
 
