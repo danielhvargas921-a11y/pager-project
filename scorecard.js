@@ -12,11 +12,11 @@ const metricColors = {
   "Base Period Wages": "#ffd23b",
   "Other Eligibility Issues": "#c15fcf",
   "All Other Causes": "#ff7b93",
-  "Improper Payment Rate": "#1f77b4", // blue
-  "Fraud Rate": "#ff7f0e", // orange
+  "Improper Payment Rate": "#1f77b4",
+  "Fraud Rate": "#ff7f0e",
   "First Payment Timeliness (14 days)": "#2a9d8f",
   "First Payment Timeliness (21 days)": "#e76f51",
-  "Nonmonetary Determination": "#9467bd", // purple
+  "Nonmonetary Determination": "#9467bd",
 };
 
 // ------------------- Chart Renderers -------------------
@@ -24,9 +24,9 @@ function renderPieChart(containerId, pieData) {
   let chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  let chart = echarts.init(chartDom);
-
+  let chart = echarts.init(chartDom, null, { renderer: "svg" });
   let option = {
+    animation: false,
     title: { text: "Root Causes of Overpayments", left: "center" },
     tooltip: { trigger: "item", formatter: "{b}: {c}%" },
     series: [
@@ -38,11 +38,10 @@ function renderPieChart(containerId, pieData) {
           ...d,
           itemStyle: { color: metricColors[d.name] || "#999" },
         })),
-        label: { formatter: "{b}: {c}%" },
+        label: { formatter: "{b}: {c}%", fontSize: 12 },
       },
     ],
   };
-
   chart.setOption(option);
   charts[containerId] = chart;
 }
@@ -51,8 +50,7 @@ function renderBumpChart(containerId, bumpData) {
   let chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  let chart = echarts.init(chartDom);
-
+  let chart = echarts.init(chartDom, null, { renderer: "svg" });
   const years = bumpData.years;
   const seriesList = bumpData.series.map((s) => ({
     name: s.name,
@@ -64,7 +62,6 @@ function renderBumpChart(containerId, bumpData) {
     itemStyle: { color: metricColors[s.name] || "#999" },
     data: s.values,
   }));
-
   let option = {
     title: { text: "Top 5 Causes of Overpayment", left: "center" },
     tooltip: { trigger: "axis" },
@@ -78,7 +75,6 @@ function renderBumpChart(containerId, bumpData) {
     },
     series: seriesList,
   };
-
   chart.setOption(option);
   charts[containerId] = chart;
 }
@@ -87,11 +83,9 @@ function renderTimelinessChart(containerId, data) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  const chart = echarts.init(chartDom);
-
+  const chart = echarts.init(chartDom, null, { renderer: "svg" });
   const years = data.years;
   const alpThreshold = 87;
-
   const seriesList = data.series.map((s) => ({
     name: s.name.replace("First Payment Timeliness", "FPT"),
     type: "line",
@@ -101,12 +95,9 @@ function renderTimelinessChart(containerId, data) {
     lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
     data: s.values.map((v) => ({
       value: v,
-      itemStyle: {
-        color: v >= alpThreshold ? "#2a9d8f" : "#e63946", // green if above line, red if below
-      },
+      itemStyle: { color: v >= alpThreshold ? "#2a9d8f" : "#e63946" },
     })),
   }));
-
   const option = {
     title: { text: "First Payment Timeliness (FPT)", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
@@ -129,7 +120,6 @@ function renderTimelinessChart(containerId, data) {
       ...seriesList,
     ],
   };
-
   chart.setOption(option);
   charts[containerId] = chart;
 }
@@ -138,11 +128,9 @@ function renderNonmonetaryChart(containerId, data) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  const chart = echarts.init(chartDom);
-
+  const chart = echarts.init(chartDom, null, { renderer: "svg" });
   const years = data.years;
   const alpThreshold = 80;
-
   const seriesList = data.series.map((s) => ({
     name: s.name,
     type: "line",
@@ -152,12 +140,9 @@ function renderNonmonetaryChart(containerId, data) {
     lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
     data: s.values.map((v) => ({
       value: v,
-      itemStyle: {
-        color: v >= alpThreshold ? "#2a9d8f" : "#e63946", // green if above line, red if below
-      },
+      itemStyle: { color: v >= alpThreshold ? "#2a9d8f" : "#e63946" },
     })),
   }));
-
   const option = {
     title: { text: "Nonmonetary Determination", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
@@ -180,7 +165,6 @@ function renderNonmonetaryChart(containerId, data) {
       ...seriesList,
     ],
   };
-
   chart.setOption(option);
   charts[containerId] = chart;
 }
@@ -189,12 +173,9 @@ function renderImproperFraudChart(containerId, data) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  const chart = echarts.init(chartDom);
-
+  const chart = echarts.init(chartDom, null, { renderer: "svg" });
   const years = data.years;
   const alpThreshold = 10;
-
-  // Series with per-point coloring
   const seriesList = data.series.map((s) => ({
     name: s.name,
     type: "line",
@@ -204,12 +185,9 @@ function renderImproperFraudChart(containerId, data) {
     lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
     data: s.values.map((v) => ({
       value: v,
-      itemStyle: {
-        color: v > alpThreshold ? "#e63946" : "#2a9d8f", // red fail / green pass
-      },
+      itemStyle: { color: v > alpThreshold ? "#e63946" : "#2a9d8f" },
     })),
   }));
-
   const option = {
     title: { text: "Improper Payment & Fraud Rates", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
@@ -222,7 +200,6 @@ function renderImproperFraudChart(containerId, data) {
       axisLabel: { formatter: "{value}%" },
     },
     series: [
-      // ALP dashed reference line
       {
         name: "ALP (10%)",
         type: "line",
@@ -233,7 +210,6 @@ function renderImproperFraudChart(containerId, data) {
       ...seriesList,
     ],
   };
-
   chart.setOption(option);
   charts[containerId] = chart;
 }
@@ -576,77 +552,126 @@ function switchView(view) {
 
 // ------------------- Export PDF -------------------
 async function exportToPDF() {
-  document.body.classList.add("exporting");
-
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF("p", "mm", "a4");
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
-  const marginX = 10; // left/right margin
-  const marginY = 10; // top margin
+  console.log("Export button clicked");
 
-  // --- Capture header once ---
-  const headerEl = document.getElementById("page-header");
-  const headerCanvas = await html2canvas(headerEl, { scale: 2, useCORS: true });
-  const headerImg = headerCanvas.toDataURL("image/png");
+  // Title
+  const titleMain =
+    document.querySelector("#reportTitle .title-main")?.innerText || "";
+  const titleSub =
+    document.querySelector("#reportTitle .title-sub")?.innerText || "";
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(16);
+  pdf.text(titleMain, pageWidth / 2, 20, { align: "center" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(12);
+  pdf.text(titleSub, pageWidth / 2, 28, { align: "center" });
 
-  let headerW = pageWidth - 2 * marginX;
-  let headerH = (headerCanvas.height * headerW) / headerCanvas.width;
+  // Hidden container
+  const exportDiv = document.createElement("div");
+  exportDiv.style.position = "absolute";
+  exportDiv.style.left = "-9999px";
+  document.body.appendChild(exportDiv);
 
-  // --- Page 1: Plots ---
-  const plotsView = document.getElementById("plots-view");
-  plotsView.style.display = "block";
-  const plotsCanvas = await html2canvas(plotsView, { scale: 2, useCORS: true });
-  const plotsImg = plotsCanvas.toDataURL("image/png");
+  const stateData = ALLDATA[currentState][currentBaseYear];
+  const chartConfigs = [
+    {
+      key: "pie",
+      renderer: renderPieChart,
+      data: Object.entries(stateData.pie || {}).map(([n, v]) => ({
+        name: n,
+        value: v,
+      })),
+    },
+    { key: "bump", renderer: renderBumpChart, data: stateData.bump },
+    {
+      key: "improperfraud",
+      renderer: renderImproperFraudChart,
+      data: stateData.improperfraud,
+    },
+    {
+      key: "timeliness",
+      renderer: renderTimelinessChart,
+      data: stateData.timeliness,
+    },
+    {
+      key: "nonmonetary",
+      renderer: renderNonmonetaryChart,
+      data: stateData.nonmonetary,
+    },
+  ];
 
-  // Place header
-  pdf.addImage(headerImg, "PNG", marginX, marginY, headerW, headerH);
+  let yOffset = 40;
 
-  // Place plots under header, aligned with same margins
-  let plotsW = pageWidth - 2 * marginX;
-  let plotsH = (plotsCanvas.height * plotsW) / plotsCanvas.width;
-  if (plotsH > pageHeight - headerH - 2 * marginY) {
-    plotsH = pageHeight - headerH - 2 * marginY;
-    plotsW = (plotsCanvas.width * plotsH) / plotsCanvas.height;
+  for (let cfg of chartConfigs) {
+    if (!cfg.data) continue;
+
+    const container = document.createElement("div");
+    container.style.width = "700px";
+    container.style.height = "500px";
+    exportDiv.appendChild(container);
+
+    cfg.renderer((container.id = cfg.key + "_export"), cfg.data);
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const svgEl = container.querySelector("svg");
+    if (!svgEl) continue;
+
+    svgEl.removeAttribute("style");
+    const w = svgEl.getAttribute("width") || 700;
+    const h = svgEl.getAttribute("height") || 500;
+    svgEl.setAttribute("viewBox", `0 0 ${w} ${h}`);
+
+    const aspectRatio = w / h;
+    let drawW = pageWidth - 40;
+    let drawH = drawW / aspectRatio;
+    if (drawH > pageHeight / 2) {
+      drawH = pageHeight / 2;
+      drawW = drawH * aspectRatio;
+    }
+
+    if (yOffset + drawH > pageHeight - 20) {
+      pdf.addPage();
+      yOffset = 20;
+    }
+
+    await window.svg2pdf.svg2pdf(svgEl, pdf, {
+      x: (pageWidth - drawW) / 2,
+      y: yOffset,
+      width: drawW,
+      height: drawH,
+    });
+
+    yOffset += drawH + 15;
   }
-  let plotsX = marginX;
-  let plotsY = marginY + headerH + 5;
-  pdf.addImage(plotsImg, "PNG", plotsX, plotsY, plotsW, plotsH);
 
-  // --- Page 2: Table ---
-  const tableView = document.getElementById("table-view");
-  tableView.style.display = "block";
-  const tableCanvas = await html2canvas(tableView, { scale: 2, useCORS: true });
-  const tableImg = tableCanvas.toDataURL("image/png");
+  // Cleanup
+  document.body.removeChild(exportDiv);
 
-  pdf.addPage();
-  pdf.addImage(headerImg, "PNG", marginX, marginY, headerW, headerH);
-
-  let tableW = pageWidth - 2 * marginX;
-  let tableH = (tableCanvas.height * tableW) / tableCanvas.width;
-  if (tableH > pageHeight - headerH - 2 * marginY) {
-    tableH = pageHeight - headerH - 2 * marginY;
-    tableW = (tableCanvas.width * tableH) / tableCanvas.height;
+  // Table export
+  const tableEl = document.querySelector("#comparison_table_container table");
+  if (tableEl) {
+    pdf.addPage();
+    pdf.autoTable({
+      html: tableEl,
+      theme: "grid",
+      headStyles: { fillColor: [10, 34, 57] },
+      margin: { top: 20 },
+    });
   }
-  let tableX = marginX;
-  let tableY = marginY + headerH + 5;
-  pdf.addImage(tableImg, "PNG", tableX, tableY, tableW, tableH);
-
-  // --- Restore toggle state ---
-  const activeView = document
-    .querySelector("#viewToggle .toggle-option.active")
-    ?.getAttribute("data-view");
-  if (activeView === "plots") {
-    tableView.style.display = "none";
-  } else {
-    plotsView.style.display = "none";
-  }
-
-  document.body.classList.remove("exporting");
 
   pdf.save("UI_Overpayments_Report.pdf");
 }
 
-// Hook up export button
-document.getElementById("exportPDFBtn").addEventListener("click", exportToPDF);
+// ------------------- Hook Export Button -------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("exportPDFBtn");
+  if (btn) {
+    console.log("Attaching click handler to Export PDF button");
+    btn.addEventListener("click", exportToPDF);
+  }
+});
