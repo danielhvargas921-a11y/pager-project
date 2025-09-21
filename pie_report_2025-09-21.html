@@ -1900,24 +1900,23 @@ async function exportToPDF() {
 
   console.log("Export button clicked");
 
-  // ---- COVER PAGE ----
+  // ---- Cover Page ----
   const titleMain =
-    document.querySelector("#reportTitle .title-main")?.innerText || "";
+    document.querySelector("#reportTitle .title-main")?.innerText ||
+    "UI Overpayments Report";
   const titleSub =
     document.querySelector("#reportTitle .title-sub")?.innerText || "";
 
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(20);
+  pdf.setFontSize(18);
   pdf.text(titleMain, pageWidth / 2, pageHeight / 2 - 10, { align: "center" });
 
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(14);
-  pdf.text(titleSub, pageWidth / 2, pageHeight / 2 + 10, { align: "center" });
+  pdf.text(titleSub, pageWidth / 2, pageHeight / 2 + 5, { align: "center" });
 
-  // Ã¢Å“â€¦ after cover page, start new page for first category
+  // Add a new page for charts
   pdf.addPage();
-  let yOffset = 30;
-  let currentCategory = null;
 
   // ---- Hidden container for charts ----
   const exportDiv = document.createElement("div");
@@ -1929,73 +1928,98 @@ async function exportToPDF() {
   const chartConfigs = [
     {
       key: "pie",
-      category: "Program Integrity Measures",
-      header: "Root Causes of Overpayments",
       renderer: renderPieChart,
       data: Object.entries(stateData.pie || {}).map(([n, v]) => ({
         name: n,
         value: v,
       })),
+      header: "Root Causes of Overpayments",
+      category: "Program Integrity Measures",
     },
     {
       key: "bump",
-      category: "Program Integrity Measures",
-      header: "Top 5 Causes of Overpayment",
       renderer: renderBumpChart,
       data: stateData.bump,
+      header: "Top 5 Causes of Overpayment",
+      category: "Program Integrity Measures",
     },
     {
       key: "improperfraud",
-      category: "Program Integrity Measures",
-      header: "Improper Payment & Fraud Rates",
       renderer: renderImproperFraudChart,
       data: stateData.improperfraud,
+      header: "Improper Payment & Fraud Rates",
+      category: "Program Integrity Measures",
     },
     {
       key: "timeliness",
-      category: "Benefit Measures",
-      header: "First Payment Timeliness",
       renderer: renderTimelinessChart,
       data: stateData.timeliness,
+      header: "First Payment Timeliness (FPT)",
+      category: "Benefit Measures",
     },
     {
       key: "nonmonetary",
-      category: "Benefit Measures",
-      header: "Nonmonetary Determination",
       renderer: renderNonmonetaryChart,
       data: stateData.nonmonetary,
+      header: "Nonmonetary Determination",
+      category: "Benefit Measures",
     },
   ];
+
+  let yOffset = 30;
+  let currentCategory = null;
+  let printedCategories = new Set();
 
   for (let i = 0; i < chartConfigs.length; i++) {
     const cfg = chartConfigs[i];
     if (!cfg.data) continue;
 
-    // ---- Category headers ----
+    // ---- Category header (print once per category) ----
     if (currentCategory !== cfg.category) {
-      // Always page break between categories
       if (currentCategory !== null) {
         pdf.addPage();
         yOffset = 30;
       }
-
       currentCategory = cfg.category;
 
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(16);
-      pdf.setTextColor(10, 34, 57);
-      pdf.text(currentCategory, pageWidth / 2, yOffset, { align: "center" });
-      pdf.setTextColor(0, 0, 0);
-      yOffset += 12;
+      if (!printedCategories.has(currentCategory)) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(16);
+        pdf.setTextColor(10, 34, 57);
+        pdf.text(currentCategory, pageWidth / 2, yOffset, { align: "center" });
+        pdf.setTextColor(0, 0, 0);
+        yOffset += 12;
+
+        printedCategories.add(currentCategory);
+      }
     }
 
-    // ---- Section headers ----
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(12);
-    pdf.text(cfg.header, pageWidth / 2, yOffset, { align: "center" });
-    yOffset += 6;
+    // ---- Estimate chart height ----
+    let estHeight = 110;
+    if (cfg.key === "pie") estHeight = 100;
+    if (cfg.key === "bump") estHeight = 130;
+    if (cfg.key === "improperfraud") estHeight = 130;
+    if (cfg.key === "timeliness" || cfg.key === "nonmonetary") estHeight = 130;
 
-    // ---- Chart rendering ----
+    const needed = estHeight + 20;
+    if (yOffset + needed > pageHeight - 20) {
+      pdf.addPage();
+      yOffset = 30;
+
+      // Ã¢Å“â€¦ Reprint ONLY section header, not category header
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text(cfg.header, pageWidth / 2, yOffset, { align: "center" });
+      yOffset += 6;
+    } else {
+      // ---- Section header ----
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text(cfg.header, pageWidth / 2, yOffset, { align: "center" });
+      yOffset += 6;
+    }
+
+    // ---- Render chart ----
     const container = document.createElement("div");
     container.style.width = "700px";
     container.style.height = "400px";
@@ -2022,7 +2046,6 @@ async function exportToPDF() {
     const h = svgEl.getAttribute("height") || 500;
     svgEl.setAttribute("viewBox", `0 0 ${w} ${h}`);
 
-    // Scale chart into PDF page
     const aspectRatio = w / h;
     let drawW = pageWidth - 40;
     let drawH = drawW / aspectRatio;
@@ -2030,6 +2053,12 @@ async function exportToPDF() {
     if (yOffset + drawH > pageHeight - 20) {
       pdf.addPage();
       yOffset = 30;
+
+      // Ã¢Å“â€¦ Reprint ONLY section header
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text(cfg.header, pageWidth / 2, yOffset, { align: "center" });
+      yOffset += 6;
     }
 
     await window.svg2pdf.svg2pdf(svgEl, pdf, {
@@ -2042,7 +2071,7 @@ async function exportToPDF() {
     yOffset += drawH + 20;
   }
 
-  // ---- Cleanup hidden div ----
+  // ---- Cleanup ----
   document.body.removeChild(exportDiv);
 
   // ---- Table export ----
