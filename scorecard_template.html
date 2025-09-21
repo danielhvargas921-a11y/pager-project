@@ -9,6 +9,9 @@
     />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <!-- html2canvas + jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!--INLINE_CSS-->
   </head>
   <body class="bg-light">
@@ -59,10 +62,18 @@
       <div id="report-container">
         <!-- Header -->
         <div id="page-header">
-          <div id="reportTitle" class="text-center">
+          <!-- Left: Export PDF button -->
+          <button id="exportPDFBtn" class="btn btn-sm btn-light">
+            Export PDF
+          </button>
+
+          <!-- Center: Report title -->
+          <div id="reportTitle" class="text-center flex-grow-1">
             <div class="title-main">UI Overpayments Report — 2025</div>
             <div class="title-sub">(National, Program Integrity Measures)</div>
           </div>
+
+          <!-- Right: Plots/Table toggle -->
           <div class="toggle-pill" id="viewToggle">
             <button class="toggle-option active" data-view="plots">
               Plots
