@@ -644,16 +644,25 @@ async function exportToPDF() {
 
   let yOffset = 40;
 
-  for (let cfg of chartConfigs) {
+  for (let i = 0; i < chartConfigs.length; i++) {
+    const cfg = chartConfigs[i];
     if (!cfg.data) continue;
 
     const container = document.createElement("div");
+
+    // Default export size
     container.style.width = "700px";
     container.style.height = "500px";
+
+    // 👉 Special case: bump chart (make it wider like CSS does in browser)
+    if (cfg.key === "bump") {
+      container.style.width = "1200px"; // extra wide
+      container.style.height = "400px"; // not too tall
+    }
+
     container.id = cfg.key + "_export";
     exportDiv.appendChild(container);
 
-    // Pass exportMode = true to disable animations
     cfg.renderer(container.id, cfg.data, true);
 
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -665,13 +674,10 @@ async function exportToPDF() {
     const h = svgEl.getAttribute("height") || 500;
     svgEl.setAttribute("viewBox", `0 0 ${w} ${h}`);
 
+    // Scale into PDF page
     const aspectRatio = w / h;
     let drawW = pageWidth - 40;
     let drawH = drawW / aspectRatio;
-    if (drawH > pageHeight / 2) {
-      drawH = pageHeight / 2;
-      drawW = drawH * aspectRatio;
-    }
 
     if (yOffset + drawH > pageHeight - 20) {
       pdf.addPage();
@@ -686,6 +692,12 @@ async function exportToPDF() {
     });
 
     yOffset += drawH + 15;
+
+    if (cfg.key === "bump") {
+      // After bump chart, force next chart onto new page
+      pdf.addPage();
+      yOffset = 20;
+    }
   }
 
   // Cleanup
