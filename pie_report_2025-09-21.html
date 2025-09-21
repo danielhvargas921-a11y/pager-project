@@ -1900,92 +1900,110 @@ async function exportToPDF() {
 
   console.log("Export button clicked");
 
-  // Title
+  // ---- COVER PAGE ----
   const titleMain =
     document.querySelector("#reportTitle .title-main")?.innerText || "";
   const titleSub =
     document.querySelector("#reportTitle .title-sub")?.innerText || "";
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(16);
-  pdf.text(titleMain, pageWidth / 2, 20, { align: "center" });
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(12);
-  pdf.text(titleSub, pageWidth / 2, 28, { align: "center" });
 
-  // Hidden container
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(20);
+  pdf.text(titleMain, pageWidth / 2, pageHeight / 2 - 10, { align: "center" });
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(14);
+  pdf.text(titleSub, pageWidth / 2, pageHeight / 2 + 10, { align: "center" });
+
+  // Ã¢Å“â€¦ after cover page, start new page for first category
+  pdf.addPage();
+  let yOffset = 30;
+  let currentCategory = null;
+
+  // ---- Hidden container for charts ----
   const exportDiv = document.createElement("div");
   exportDiv.style.position = "absolute";
   exportDiv.style.left = "-9999px";
   document.body.appendChild(exportDiv);
 
   const stateData = ALLDATA[currentState][currentBaseYear];
-
   const chartConfigs = [
     {
       key: "pie",
+      category: "Program Integrity Measures",
+      header: "Root Causes of Overpayments",
       renderer: renderPieChart,
       data: Object.entries(stateData.pie || {}).map(([n, v]) => ({
         name: n,
         value: v,
       })),
     },
-    { key: "bump", renderer: renderBumpChart, data: stateData.bump },
+    {
+      key: "bump",
+      category: "Program Integrity Measures",
+      header: "Top 5 Causes of Overpayment",
+      renderer: renderBumpChart,
+      data: stateData.bump,
+    },
     {
       key: "improperfraud",
+      category: "Program Integrity Measures",
+      header: "Improper Payment & Fraud Rates",
       renderer: renderImproperFraudChart,
       data: stateData.improperfraud,
     },
     {
       key: "timeliness",
+      category: "Benefit Measures",
+      header: "First Payment Timeliness",
       renderer: renderTimelinessChart,
       data: stateData.timeliness,
     },
     {
       key: "nonmonetary",
+      category: "Benefit Measures",
+      header: "Nonmonetary Determination",
       renderer: renderNonmonetaryChart,
       data: stateData.nonmonetary,
     },
   ];
 
-  // Map chart keys to headers
-  const headerMap = {
-    pie: "Root Causes of Overpayments",
-    bump: "Top 5 Causes of Overpayment",
-    improperfraud: "Improper Payment & Fraud Rates",
-    timeliness: "First Payment Timeliness (FPT)",
-    nonmonetary: "Nonmonetary Determinations",
-  };
-
-  let yOffset = 40;
-
   for (let i = 0; i < chartConfigs.length; i++) {
     const cfg = chartConfigs[i];
     if (!cfg.data) continue;
 
-    // Add header above each chart
-    const header = headerMap[cfg.key];
-    if (header) {
+    // ---- Category headers ----
+    if (currentCategory !== cfg.category) {
+      // Always page break between categories
+      if (currentCategory !== null) {
+        pdf.addPage();
+        yOffset = 30;
+      }
+
+      currentCategory = cfg.category;
+
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(14);
-      pdf.setTextColor(10, 34, 57); // navy color
-      pdf.text(header, pageWidth / 2, yOffset, { align: "center" });
-      yOffset += 10; // spacing below header
-      pdf.setTextColor(0, 0, 0); // reset text color
+      pdf.setFontSize(16);
+      pdf.setTextColor(10, 34, 57);
+      pdf.text(currentCategory, pageWidth / 2, yOffset, { align: "center" });
+      pdf.setTextColor(0, 0, 0);
+      yOffset += 12;
     }
 
+    // ---- Section headers ----
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.text(cfg.header, pageWidth / 2, yOffset, { align: "center" });
+    yOffset += 6;
+
+    // ---- Chart rendering ----
     const container = document.createElement("div");
-
-    // Default export size
     container.style.width = "700px";
-    container.style.height = "500px";
+    container.style.height = "400px";
 
-    // Special cases
     if (cfg.key === "bump") {
       container.style.width = "900px";
-      container.style.height = "500px";
-    }
-
-    if (cfg.key === "pie") {
+      container.style.height = "450px";
+    } else if (cfg.key === "pie") {
       container.style.width = "600px";
       container.style.height = "350px";
     }
@@ -2004,14 +2022,14 @@ async function exportToPDF() {
     const h = svgEl.getAttribute("height") || 500;
     svgEl.setAttribute("viewBox", `0 0 ${w} ${h}`);
 
-    // Scale into PDF page
+    // Scale chart into PDF page
     const aspectRatio = w / h;
     let drawW = pageWidth - 40;
     let drawH = drawW / aspectRatio;
 
     if (yOffset + drawH > pageHeight - 20) {
       pdf.addPage();
-      yOffset = 20;
+      yOffset = 30;
     }
 
     await window.svg2pdf.svg2pdf(svgEl, pdf, {
@@ -2021,19 +2039,13 @@ async function exportToPDF() {
       height: drawH,
     });
 
-    yOffset += drawH + 20; // spacing between charts
-
-    if (cfg.key === "bump") {
-      // After bump chart, force next chart onto new page
-      pdf.addPage();
-      yOffset = 20;
-    }
+    yOffset += drawH + 20;
   }
 
-  // Cleanup
+  // ---- Cleanup hidden div ----
   document.body.removeChild(exportDiv);
 
-  // Table export
+  // ---- Table export ----
   const tableEl = document.querySelector("#comparison_table_container table");
   if (tableEl) {
     pdf.addPage();
