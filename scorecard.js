@@ -20,13 +20,14 @@ const metricColors = {
 };
 
 // ------------------- Chart Renderers -------------------
-function renderPieChart(containerId, pieData) {
+function renderPieChart(containerId, pieData, exportMode = false) {
   let chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
   let chart = echarts.init(chartDom, null, { renderer: "svg" });
+
   let option = {
-    animation: false,
+    animation: !exportMode, // disable animation in export
     title: { text: "Root Causes of Overpayments", left: "center" },
     tooltip: { trigger: "item", formatter: "{b}: {c}%" },
     series: [
@@ -42,15 +43,17 @@ function renderPieChart(containerId, pieData) {
       },
     ],
   };
+
   chart.setOption(option);
   charts[containerId] = chart;
 }
 
-function renderBumpChart(containerId, bumpData) {
+function renderBumpChart(containerId, bumpData, exportMode = false) {
   let chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
   let chart = echarts.init(chartDom, null, { renderer: "svg" });
+
   const years = bumpData.years;
   const seriesList = bumpData.series.map((s) => ({
     name: s.name,
@@ -62,7 +65,9 @@ function renderBumpChart(containerId, bumpData) {
     itemStyle: { color: metricColors[s.name] || "#999" },
     data: s.values,
   }));
+
   let option = {
+    animation: !exportMode,
     title: { text: "Top 5 Causes of Overpayment", left: "center" },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
@@ -75,17 +80,20 @@ function renderBumpChart(containerId, bumpData) {
     },
     series: seriesList,
   };
+
   chart.setOption(option);
   charts[containerId] = chart;
 }
 
-function renderTimelinessChart(containerId, data) {
+function renderTimelinessChart(containerId, data, exportMode = false) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
   const chart = echarts.init(chartDom, null, { renderer: "svg" });
+
   const years = data.years;
   const alpThreshold = 87;
+
   const seriesList = data.series.map((s) => ({
     name: s.name.replace("First Payment Timeliness", "FPT"),
     type: "line",
@@ -98,7 +106,9 @@ function renderTimelinessChart(containerId, data) {
       itemStyle: { color: v >= alpThreshold ? "#2a9d8f" : "#e63946" },
     })),
   }));
+
   const option = {
+    animation: !exportMode,
     title: { text: "First Payment Timeliness (FPT)", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
@@ -120,17 +130,20 @@ function renderTimelinessChart(containerId, data) {
       ...seriesList,
     ],
   };
+
   chart.setOption(option);
   charts[containerId] = chart;
 }
 
-function renderNonmonetaryChart(containerId, data) {
+function renderNonmonetaryChart(containerId, data, exportMode = false) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
   const chart = echarts.init(chartDom, null, { renderer: "svg" });
+
   const years = data.years;
   const alpThreshold = 80;
+
   const seriesList = data.series.map((s) => ({
     name: s.name,
     type: "line",
@@ -143,7 +156,9 @@ function renderNonmonetaryChart(containerId, data) {
       itemStyle: { color: v >= alpThreshold ? "#2a9d8f" : "#e63946" },
     })),
   }));
+
   const option = {
+    animation: !exportMode,
     title: { text: "Nonmonetary Determination", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
@@ -165,17 +180,20 @@ function renderNonmonetaryChart(containerId, data) {
       ...seriesList,
     ],
   };
+
   chart.setOption(option);
   charts[containerId] = chart;
 }
 
-function renderImproperFraudChart(containerId, data) {
+function renderImproperFraudChart(containerId, data, exportMode = false) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
   const chart = echarts.init(chartDom, null, { renderer: "svg" });
+
   const years = data.years;
   const alpThreshold = 10;
+
   const seriesList = data.series.map((s) => ({
     name: s.name,
     type: "line",
@@ -188,7 +206,9 @@ function renderImproperFraudChart(containerId, data) {
       itemStyle: { color: v > alpThreshold ? "#e63946" : "#2a9d8f" },
     })),
   }));
+
   const option = {
+    animation: !exportMode,
     title: { text: "Improper Payment & Fraud Rates", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
@@ -210,6 +230,7 @@ function renderImproperFraudChart(containerId, data) {
       ...seriesList,
     ],
   };
+
   chart.setOption(option);
   charts[containerId] = chart;
 }
@@ -613,11 +634,13 @@ async function exportToPDF() {
     const container = document.createElement("div");
     container.style.width = "700px";
     container.style.height = "500px";
+    container.id = cfg.key + "_export";
     exportDiv.appendChild(container);
 
-    cfg.renderer((container.id = cfg.key + "_export"), cfg.data);
+    // Pass exportMode = true to disable animations
+    cfg.renderer(container.id, cfg.data, true);
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 300));
     const svgEl = container.querySelector("svg");
     if (!svgEl) continue;
 
