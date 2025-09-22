@@ -43,12 +43,12 @@
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center; /* keep content centered */
+  justify-content: center;
   background-color: #0a2239;
   color: #fff;
   padding: 15px 20px;
   border-bottom: 1px solid #dee2e6;
-  border-radius: 0; /* corners handled by container */
+  border-radius: 0;
 }
 
 /* Export button (left side) */
@@ -90,7 +90,7 @@
   right: 20px;
   display: inline-flex;
   border-radius: 30px;
-  background: #e9ecef; /* light grey capsule */
+  background: #e9ecef;
   padding: 4px;
   gap: 4px;
 }
@@ -102,7 +102,7 @@
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s;
-  color: #495057; /* neutral grey */
+  color: #495057;
 }
 #page-header .toggle-option:hover {
   background: #dee2e6;
@@ -115,8 +115,8 @@
 /* Section (report body inside card) */
 .section {
   padding: 20px 50px;
-  border: none; /* container handles border */
-  border-radius: 0; /* corners handled by container */
+  border: none;
+  border-radius: 0;
   background: #fff;
   margin: 0;
 }
@@ -174,7 +174,7 @@
   text-align: center;
 }
 
-/* Pill toggle styling (for sidebar, not header) */
+/* Pill toggle styling (sidebar) */
 .toggle-pill {
   display: inline-flex;
   border-radius: 50px;
@@ -202,7 +202,7 @@
   color: #fff;
 }
 
-/* Animations */
+/* table animations (removed for now) */
 .fade-in {
   opacity: 0;
   transform: translateY(10px);
@@ -284,9 +284,8 @@
   pointer-events: none;
 }
 
-/* ===========================
-   Export / PDF Styling
-   =========================== */
+/*  Export / PDF Styling */
+
 body.exporting #sidebar {
   display: none !important;
 }
@@ -301,7 +300,7 @@ body.exporting #report-container {
   box-shadow: none !important;
   border: none !important;
   margin: 0 auto !important;
-  padding: 0 !important; /* <-- removed padding */
+  padding: 0 !important;
   background: #fff !important;
 }
 

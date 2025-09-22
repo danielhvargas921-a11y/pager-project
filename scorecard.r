@@ -6,20 +6,19 @@ if (!requireNamespace("lubridate", quietly = TRUE)) install.packages("lubridate"
 library(glue)
 library(jsonlite)
 library(dplyr)
-library(lubridate) 
+library(lubridate)
 
-# ---------------- Hardcoded Values ----------------
+# hardcoded variables
+
 year_range <- "Jul-Jun"
-base_path <- "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
+base_path <- "C:/Users/Vargas.Daniel.H/Desktop/SCORE CARD PROJECT/main/scorecard/pager-project"
 
 f <- file.path(base_path, "scorecard_data.csv")
 df_raw <- read.csv(f, stringsAsFactors = FALSE, header = TRUE, check.names = FALSE)
 
-# Basic checks
 stopifnot(all(c("State", "Date") %in% names(df_raw)))
 df_raw$Date <- as.Date(df_raw$Date, format = "%m/%d/%Y")
 
-# ---- metric sets ----
 metrics_for_pie <- c(
   "Work Search", "Benefit Year Earnings", "Separation Issues", "Able + Available",
   "Employment Service Registration", "Base Period Wages", "Other Eligibility Issues", "All Other Causes"
@@ -35,7 +34,7 @@ metrics_improperfraud <- c(
   "Fraud Rate"
 )
 
-# ---------------- helpers ----------------
+# ---------------- helper functions ---
 numify <- function(x) as.numeric(gsub("%", "", as.character(x)))
 
 annual_last_month <- function(df, year, range, metrics, state = "US") {
@@ -62,29 +61,33 @@ annual_multi_year <- function(df, base_year, range, metrics, state = "US", n_yea
 
   results <- lapply(years, function(y) {
     v <- annual_last_month(df, y, range, metrics, state = state)
-    if (is.null(v)) return(NULL)
+    if (is.null(v)) {
+      return(NULL)
+    }
     setNames(as.list(v), metrics)
   })
 
   names(results) <- years
   results <- Filter(Negate(is.null), results)
-  if (length(results) == 0) return(NULL)
+  if (length(results) == 0) {
+    return(NULL)
+  }
 
   out <- bind_rows(results, .id = "Year")
   out$Year <- as.integer(out$Year)
   out
 }
 
-# ---------------- Build ALLDATA ----------------
+# ---------------- Build data ----------------
 all_years <- c(2024, 2025)
 all_states <- unique(df_raw$State)
-all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING 
+# all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
 
 all_data <- list()
 
 for (st in all_states) {
   state_list <- list()
-  
+
   for (y in all_years) {
     # --- PIE/TABLE ---
     vals <- annual_last_month(df_raw, y, year_range, metrics_for_pie, state = st)
@@ -106,10 +109,9 @@ for (st in all_states) {
       check.names = FALSE
     )
 
-    # --- BENEFIT TABLE ---
     benefit_table_df <- NULL
 
-    # Timeliness
+    # Timeliness table
     t_vals <- annual_last_month(df_raw, y, year_range, metrics_timeliness, state = st)
     prev_t_vals <- annual_last_month(df_raw, y - 1, year_range, metrics_timeliness, state = st)
     if (!is.null(t_vals)) {
@@ -125,7 +127,7 @@ for (st in all_states) {
       benefit_table_df <- rbind(benefit_table_df, t_df)
     }
 
-    # Nonmonetary
+    # Nonmonetary table
     nm_vals <- annual_last_month(df_raw, y, year_range, "Nonmonetary Determination", state = st)
     prev_nm_vals <- annual_last_month(df_raw, y - 1, year_range, "Nonmonetary Determination", state = st)
     if (!is.null(nm_vals)) {
@@ -141,7 +143,7 @@ for (st in all_states) {
       benefit_table_df <- rbind(benefit_table_df, nm_df)
     }
 
-    # --- BUMP/TOP-5 ---
+    # bump table
     counts_df <- annual_multi_year(df_raw, y, year_range, metrics_for_pie, state = st, n_years = 6)
     bump_data <- NULL
     if (!is.null(counts_df)) {
@@ -206,7 +208,7 @@ for (st in all_states) {
       nonmonetary = nm_data
     )
   }
-  
+
   # attach to main list
   all_data[[st]] <- state_list
 }

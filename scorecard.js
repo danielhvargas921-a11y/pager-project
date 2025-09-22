@@ -32,19 +32,19 @@ function renderPieChart(containerId, pieData, exportMode = false) {
     series: [
       {
         type: "pie",
-        radius: exportMode ? ["30%", "65%"] : ["35%", "75%"], // slightly smaller donut in export
+        radius: exportMode ? ["30%", "65%"] : ["35%", "75%"],
         center: ["50%", "55%"],
         data: pieData.map((d) => ({
           ...d,
           itemStyle: { color: metricColors[d.name] || "#999" },
         })),
         label: {
-          show: true, // ensure labels are forced visible
+          show: true,
           formatter: "{b}: {c}%",
           fontSize: exportMode ? 10 : 12,
           color: "#000",
           position: "outside",
-          overflow: "break", // try to wrap long text
+          overflow: "break",
           alignTo: "labelLine",
           distanceToLabelLine: 2,
         },
@@ -54,7 +54,7 @@ function renderPieChart(containerId, pieData, exportMode = false) {
           length2: exportMode ? 15 : 10,
           lineStyle: { color: "#666" },
         },
-        avoidLabelOverlap: false, // disable auto-hiding
+        avoidLabelOverlap: false,
       },
     ],
   };
@@ -589,9 +589,8 @@ async function exportToPDF() {
   const stateData = ALLDATA[currentState][currentBaseYear];
   let yOffset = 30;
 
-  // ===============================
-  // 📌 PROGRAM INTEGRITY (Pie + Bump bundled)
-  // ===============================
+  //  PROGRAM INTEGRITY (Pie + Bump bundled)
+
   if (stateData.pie || stateData.bump) {
     // Print Program Integrity header once
     pdf.setFont("helvetica", "bold");
@@ -650,9 +649,8 @@ async function exportToPDF() {
     }
   }
 
-  // ===============================
-  // 📌 PROGRAM INTEGRITY (Improper/Fraud after Pie+Bump)
-  // ===============================
+  // PROGRAM INTEGRITY (Improper/Fraud after Pie+Bump)
+
   if (stateData.improperfraud) {
     if (yOffset > pageHeight - 150) {
       pdf.addPage();
@@ -679,9 +677,8 @@ async function exportToPDF() {
     );
   }
 
-  // ===============================
-  // 📌 BENEFIT MEASURES
-  // ===============================
+  //  BENEFIT MEASURES
+
   if (stateData.timeliness || stateData.nonmonetary) {
     pdf.addPage();
     yOffset = 30;
