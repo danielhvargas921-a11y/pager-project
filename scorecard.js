@@ -407,7 +407,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
   const stateLabel = stateCode === "US" ? "National" : stateCode;
 
   document.getElementById("reportTitle").innerHTML = `
-    <div class="title-main">UI Overpayments Report &mdash; ${baseYear}</div>
+    <div class="title-main">UI Payment Integrity Report &mdash; ${baseYear}</div>
     <div class="title-sub">(${stateLabel}, ${catLabel})</div>
   `;
 
@@ -565,7 +565,7 @@ async function exportToPDF() {
   // ---- Cover Page ----
   const titleMain =
     document.querySelector("#reportTitle .title-main")?.innerText ||
-    "UI Overpayments Report";
+    "UI Payment Integrity Report";
   const titleSub =
     document.querySelector("#reportTitle .title-sub")?.innerText || "";
 
@@ -754,7 +754,7 @@ async function exportToPDF() {
     });
   }
 
-  pdf.save("UI_Overpayments_Report.pdf");
+  pdf.save("UI Payment Integrity Report.pdf");
 }
 
 // ------------------- Helper -------------------

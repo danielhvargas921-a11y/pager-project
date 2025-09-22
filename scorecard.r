@@ -294,7 +294,7 @@ final_html <- template |>
   gsub("<!--DATE-->", as.character(today), x = _, fixed = TRUE) |>
   gsub("<!--METRIC_SECTIONS-->", section_html, x = _, fixed = TRUE)
 
-outfile <- file.path(base_path, glue("pie_report_{today}.html"))
+outfile <- file.path(base_path, glue("integrity_report_{today}.html"))
 writeLines(enc2utf8(final_html), outfile, useBytes = TRUE)
 browseURL(outfile)
 cat("Dashboard built:", outfile, "\n")

@@ -322,3 +322,13 @@ body.exporting #page-header .toggle-pill {
   font-weight: 600;
   color: #0a2239;
 }
+
+/* footer style labels */
+
+#sidebar-footer {
+  font-size: 15px;
+  color: #666;
+  text-align: center;
+  margin-top: 20px;
+  font-style: italic;
+}
