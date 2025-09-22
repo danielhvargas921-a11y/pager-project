@@ -19,7 +19,7 @@ const metricColors = {
   "Nonmonetary Determination": "#9467bd",
 };
 
-// ------------------- Chart Renderers -------------------
+// -------- Chart Renderers -------------------
 function renderPieChart(containerId, pieData, exportMode = false) {
   let chartDom = document.getElementById(containerId);
   if (!chartDom) return;
