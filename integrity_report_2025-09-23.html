@@ -502,6 +502,14 @@ body.exporting #page-header .toggle-pill {
   display: flex;
   justify-content: center; /* center horizontally */
   align-items: center; /* center vertically */
+  background-color: #f1f1f1; /* light grey background */
+}
+
+.intro-col-grey {
+  background-color: #f1f1f1; /* full grey background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
   </head>
@@ -551,9 +559,10 @@ body.exporting #page-header .toggle-pill {
     <!-- Main content -->
     <div id="main-content" class="p-4">
       <!-- INTRO SECTION -->
-      <div id="intro-container" class="report-container p-4 mb-4">
+      <div id="intro-container" class="report-container mb-4">
         <div class="intro-row d-flex">
-          <div class="flex-grow-1 pe-4 col-9">
+          <!-- Left: text (with padding) -->
+          <div class="flex-grow-1 pe-4 col-9 p-4">
             <h2 class="text-center mb-4">UI Performance Scorecard</h2>
 
             <p>
@@ -581,7 +590,10 @@ body.exporting #page-header .toggle-pill {
             </p>
           </div>
 
-          <div class="intro-image text-center col-3">
+          <!-- Right: seal (full grey column) -->
+          <div
+            class="intro-col-grey col-3 d-flex justify-content-center align-items-center"
+          >
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Seal_of_the_United_States_Department_of_Labor.svg"
               alt="U.S. Department of Labor Seal"

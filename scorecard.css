@@ -475,4 +475,12 @@ body.exporting #page-header .toggle-pill {
   display: flex;
   justify-content: center; /* center horizontally */
   align-items: center; /* center vertically */
+  background-color: #f1f1f1; /* light grey background */
+}
+
+.intro-col-grey {
+  background-color: #f1f1f1; /* full grey background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
