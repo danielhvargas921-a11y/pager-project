@@ -11,7 +11,7 @@ library(lubridate)
 # hardcoded variables
 
 year_range <- "Jul-Jun"
-base_path <- "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
+base_path <- "C:/Users/Vargas.Daniel.H/Desktop/SCORE CARD PROJECT/main/scorecard/pager-project"
 
 f <- file.path(base_path, "scorecard_data.csv")
 df_raw <- read.csv(f, stringsAsFactors = FALSE, header = TRUE, check.names = FALSE)
@@ -197,6 +197,17 @@ for (st in all_states) {
       }
     }
 
+    # --- test line data ---
+
+    newmetric_data <- NULL
+
+    nm_vals <- annual_last_month(df_raw, y, year_range, "New Metric", state = st)
+    if (!is.null(nm_vals)) {
+      multi_nm <- annual_multi_year(df_raw, y, year_range, "New Metric", state = st, n_years = 6)
+      nm_series <- list(list(name = "New Metric", values = as.numeric(multi_nm[["New Metric"]])))
+      newmetric_data <- list(years = as.numeric(multi_nm$Year), series = nm_series)
+    }
+
     # assemble per year
     state_list[[as.character(y)]] <- list(
       pie = as.list(setNames(proportions, metrics_for_pie)),
@@ -205,7 +216,8 @@ for (st in all_states) {
       bump = bump_data,
       timeliness = timeliness_data,
       improperfraud = improperfraud_data,
-      nonmonetary = nm_data
+      nonmonetary = nm_data,
+      newmetric = newmetric_data
     )
   }
 
@@ -282,9 +294,9 @@ section_html <- glue('
         </div>
 
         <div class="chart-block" data-category="overview">
-          <h4>[Placeholder Slot]</h4>
-          <p class="chart-subtitle">Space reserved for future chart</p>
-          <div class="chart-container placeholder-box"></div>
+        <h4>Test Metric</h4>
+        <p class="chart-subtitle">Test Test</p>
+        <div id="overview_newmetric" class="chart-container"></div>
         </div>
 
         <div class="chart-block" data-category="overview">

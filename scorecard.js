@@ -250,6 +250,60 @@ function renderImproperFraudChart(containerId, data, exportMode = false) {
   charts[containerId] = chart;
 }
 
+function renderLineChart(containerId, data, options = {}, exportMode = false) {
+  const chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+
+  if (charts[containerId]) {
+    echarts.dispose(chartDom);
+    delete charts[containerId];
+  }
+
+  const chart = echarts.init(chartDom, null, { renderer: "svg" });
+
+  const years = data.years || [];
+  const seriesList = data.series.map((s) => ({
+    name: s.name,
+    type: "line",
+    smooth: true,
+    symbolSize: 8,
+    emphasis: { focus: "series" },
+    lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
+    data: s.values.map((v) => ({
+      value: v,
+      itemStyle: { color: metricColors[s.name] || "#999" },
+    })),
+  }));
+
+  //
+  if (options.threshold !== undefined) {
+    seriesList.unshift({
+      name: options.thresholdLabel || `Threshold (${options.threshold}%)`,
+      type: "line",
+      symbol: "none",
+      lineStyle: { type: "dashed", color: "red", width: 2 },
+      data: years.map(() => options.threshold),
+    });
+  }
+
+  const option = {
+    animation: !exportMode,
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
+    xAxis: { type: "category", boundaryGap: false, data: years },
+    yAxis: {
+      type: "value",
+      name: "Percent",
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: seriesList,
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
 function renderComparisonTable(containerId, tableData, baseYear) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -524,6 +578,26 @@ function updateDashboard(baseYear, category, stateCode = "US") {
         : "nonmonetary_chart_container",
       nonmonetaryData
     );
+  }
+
+  //new metric dash logic for inserting overview logic
+
+  if (category === "overview" && stateData.newmetric) {
+    const newData = {
+      years: yearsRange,
+      series: stateData.newmetric.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.newmetric.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+
+    renderLineChart("overview_newmetric", newData, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
   }
 }
 
