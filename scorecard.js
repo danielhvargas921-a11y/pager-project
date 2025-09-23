@@ -599,6 +599,26 @@ function updateDashboard(baseYear, category, stateCode = "US") {
       thresholdLabel: "Target (50%)",
     });
   }
+
+  //new metric dash logic for inserting overview logic_metric 2
+
+  if (category === "overview" && stateData.newmetric_2) {
+    const newData_2 = {
+      years: yearsRange,
+      series: stateData.newmetric_2.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.newmetric_2.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+
+    renderLineChart("overview_newmetric_2", newData_2, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
+  }
 }
 
 // ------------------- Switch View -------------------

@@ -391,8 +391,8 @@ body.exporting #page-header .toggle-pill {
   border: 2px solid #ccc;
   padding: 20px;
   text-align: center;
-  font-style: italic;
-  color: #777;
+  font-style: Arial;
+  color: black;
   border-radius: 4px;
   background: #fafafa;
 }

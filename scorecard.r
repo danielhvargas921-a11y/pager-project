@@ -81,7 +81,7 @@ annual_multi_year <- function(df, base_year, range, metrics, state = "US", n_yea
 # ---------------- Build data ----------------
 all_years <- c(2024, 2025)
 all_states <- unique(df_raw$State)
-all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
+# all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
 
 all_data <- list()
 
@@ -208,6 +208,17 @@ for (st in all_states) {
       newmetric_data <- list(years = as.numeric(multi_nm$Year), series = nm_series)
     }
 
+    # --- test line data 2 ---
+
+    newmetric_data_2 <- NULL
+
+    nm_vals_2 <- annual_last_month(df_raw, y, year_range, "New Metric 2", state = st)
+    if (!is.null(nm_vals_2)) {
+      multi_nm_2 <- annual_multi_year(df_raw, y, year_range, "New Metric 2", state = st, n_years = 6)
+      nm_series_2 <- list(list(name = "New Metric 2", values = as.numeric(multi_nm_2[["New Metric 2"]])))
+      newmetric_data_2 <- list(years = as.numeric(multi_nm_2$Year), series = nm_series_2)
+    }
+
     # assemble per year
     state_list[[as.character(y)]] <- list(
       pie = as.list(setNames(proportions, metrics_for_pie)),
@@ -217,7 +228,8 @@ for (st in all_states) {
       timeliness = timeliness_data,
       improperfraud = improperfraud_data,
       nonmonetary = nm_data,
-      newmetric = newmetric_data
+      newmetric = newmetric_data,
+      newmetric_2 = newmetric_data_2
     )
   }
 
@@ -281,7 +293,7 @@ section_html <- glue('
         <!-- Validation Table (moved here) -->
         <div class="chart-block" data-category="overview">
           <h4>Data Validation Table</h4>
-          <div class="table-placeholder">[Validation Table Placeholder]</div>
+          <div class="table-placeholder">TABLE TEST</div>
         </div>
       </div>
 
@@ -294,16 +306,17 @@ section_html <- glue('
         </div>
 
         <div class="chart-block" data-category="overview">
-        <h4>Test Metric</h4>
-        <p class="chart-subtitle">Test Test</p>
-        <div id="overview_newmetric" class="chart-container"></div>
+          <h4>Test Metric</h4>
+          <p class="chart-subtitle">Test Test</p>
+          <div id="overview_newmetric" class="chart-container"></div>
         </div>
 
         <div class="chart-block" data-category="overview">
-          <h4>[Placeholder Slot]</h4>
-          <p class="chart-subtitle">Space reserved for future chart</p>
-          <div class="chart-container placeholder-box"></div>
+          <h4>Test Metric</h4>
+          <p class="chart-subtitle">Test Test</p>
+          <div id="overview_newmetric_2" class="chart-container"></div>
         </div>
+
       </div>
     </div>
 
