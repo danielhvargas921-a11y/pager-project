@@ -492,38 +492,46 @@ body.exporting #page-header .toggle-pill {
   <div id="plots-view">
 
     <!-- ================= OVERVIEW ================= -->
-    <div class="chart-block" data-category="overview">
-      <h4>First Payment Timeliness</h4>
-      <p class="chart-subtitle">Percent of payments made within 14 and 21 days</p>
-      <div id="overview_timeliness" class="chart-container"></div>
+    <div class="overview-row">
+      <!-- Left column -->
+      <div class="overview-col">
+        <div class="chart-block" data-category="overview">
+          <h4>First Payment Timeliness</h4>
+          <p class="chart-subtitle">Percent of payments made within 14 and 21 days</p>
+          <div id="overview_timeliness" class="chart-container"></div>
+        </div>
+
+        <div class="chart-block" data-category="overview">
+          <h4>Nonmonetary Determinations</h4>
+          <p class="chart-subtitle">Percent of determinations meeting ALP (80%)</p>
+          <div id="overview_nonmonetary" class="chart-container"></div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div class="overview-col">
+        <div class="chart-block" data-category="overview">
+          <h4>Improper Payment Rate</h4>
+          <p class="chart-subtitle">Percent of overpayments classified as improper</p>
+          <div id="overview_improper" class="chart-container"></div>
+        </div>
+
+        <div class="chart-block" data-category="overview">
+          <h4>[Placeholder Slot]</h4>
+          <p class="chart-subtitle">Space reserved for future chart</p>
+          <div class="chart-container placeholder-box"></div>
+        </div>
+
+        <div class="chart-block" data-category="overview">
+          <h4>[Placeholder Slot]</h4>
+          <p class="chart-subtitle">Space reserved for future chart</p>
+          <div class="chart-container placeholder-box"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="chart-block" data-category="overview">
-      <h4>Nonmonetary Determinations</h4>
-      <p class="chart-subtitle">Percent of determinations meeting ALP (80%)</p>
-      <div id="overview_nonmonetary" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>Improper Payment Rate</h4>
-      <p class="chart-subtitle">Percent of overpayments classified as improper</p>
-      <div id="overview_improper" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>[Placeholder Slot]</h4>
-      <p class="chart-subtitle">Space reserved for future chart</p>
-      <div class="chart-container placeholder-box"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>[Placeholder Slot]</h4>
-      <p class="chart-subtitle">Space reserved for future chart</p>
-      <div class="chart-container placeholder-box"></div>
-    </div>
-
-    <!-- Validation Table -->
-    <div class="chart-block" data-category="overview">
+    <!-- Validation Table across full width -->
+    <div class="overview-table mt-4" data-category="overview">
       <h4>Data Validation Table</h4>
       <div class="table-placeholder">[Validation Table Placeholder]</div>
     </div>
