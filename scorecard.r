@@ -185,15 +185,28 @@ for (st in all_states) {
     }
 
     # --- IMPROPER/FRAUD ---
-    improperfraud_data <- NULL
+    improper_data <- NULL
+    fraud_data <- NULL
     if (all(metrics_improperfraud %in% names(df_raw))) {
       if_vals <- annual_last_month(df_raw, y, year_range, metrics_improperfraud, state = st)
       if (!is.null(if_vals)) {
         multi_if <- annual_multi_year(df_raw, y, year_range, metrics_improperfraud, state = st, n_years = 6)
-        if_series <- lapply(metrics_improperfraud, function(m) {
-          list(name = m, values = as.numeric(multi_if[[m]]))
-        })
-        improperfraud_data <- list(years = as.numeric(multi_if$Year), series = if_series)
+
+        # Improper Payment Rate
+        if ("Improper Payment Rate" %in% names(multi_if)) {
+          improper_data <- list(
+            years = as.numeric(multi_if$Year),
+            series = list(list(name = "Improper Payment Rate", values = as.numeric(multi_if[["Improper Payment Rate"]])))
+          )
+        }
+
+        # Fraud Rate
+        if ("Fraud Rate" %in% names(multi_if)) {
+          fraud_data <- list(
+            years = as.numeric(multi_if$Year),
+            series = list(list(name = "Fraud Rate", values = as.numeric(multi_if[["Fraud Rate"]])))
+          )
+        }
       }
     }
 
@@ -227,7 +240,8 @@ for (st in all_states) {
       table_benefit = benefit_table_df,
       bump = bump_data,
       timeliness = timeliness_data,
-      improperfraud = improperfraud_data,
+      improper = improper_data,
+      fraud = fraud_data,
       nonmonetary = nm_data,
       quality_sep = quality_sep_data,
       quality_nonsep = quality_nonsep_data
@@ -279,6 +293,7 @@ section_html <- glue('
     <div class="overview-row">
       <!-- Left Column -->
       <div class="overview-col left">
+
         <div class="chart-block" data-category="overview">
           <h4>First Payment Timeliness</h4>
           <p class="chart-subtitle">Percent of payments made within 14 and 21 days</p>
@@ -292,18 +307,20 @@ section_html <- glue('
         </div>
 
         <div class="chart-block" data-category="overview">
-          <h4>Data Validation Table</h4>
-          <div class="table-placeholder">TABLE TEST</div>
+          <h4>Fraud Rate</h4>
+          <p class="chart-subtitle">Percent of overpayments classified as improper</p>
+          <div id="fraud_chart_container" class="chart-container"></div>
         </div>
 
       </div>
 
       <!-- Right Column -->
       <div class="overview-col right">
+
         <div class="chart-block" data-category="overview">
           <h4>Improper Payment Rate</h4>
           <p class="chart-subtitle">Percent of overpayments classified as improper</p>
-          <div id="overview_improper" class="chart-container"></div>
+          <div id="improper_chart_container" class="chart-container"></div>
         </div>
 
         <div class="chart-block" data-category="overview">

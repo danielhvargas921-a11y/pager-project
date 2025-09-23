@@ -624,6 +624,7 @@ body.exporting #page-header .toggle-pill {
     <div class="overview-row">
       <!-- Left Column -->
       <div class="overview-col left">
+
         <div class="chart-block" data-category="overview">
           <h4>First Payment Timeliness</h4>
           <p class="chart-subtitle">Percent of payments made within 14 and 21 days</p>
@@ -636,19 +637,21 @@ body.exporting #page-header .toggle-pill {
           <div id="overview_nonmonetary" class="chart-container"></div>
         </div>
 
-        <!-- Validation Table (moved here) -->
         <div class="chart-block" data-category="overview">
-          <h4>Data Validation Table</h4>
-          <div class="table-placeholder">TABLE TEST</div>
+          <h4>Fraud Rate</h4>
+          <p class="chart-subtitle">Percent of overpayments classified as improper</p>
+          <div id="fraud_chart_container" class="chart-container"></div>
         </div>
+
       </div>
 
       <!-- Right Column -->
       <div class="overview-col right">
+
         <div class="chart-block" data-category="overview">
           <h4>Improper Payment Rate</h4>
           <p class="chart-subtitle">Percent of overpayments classified as improper</p>
-          <div id="overview_improper" class="chart-container"></div>
+          <div id="improper_chart_container" class="chart-container"></div>
         </div>
 
         <div class="chart-block" data-category="overview">
@@ -826,13 +829,18 @@ var ALLDATA = {
           }
         ]
       },
-      "improperfraud": {
+      "improper": {
         "years": [2019, 2020, 2021, 2022, 2023, 2024],
         "series": [
           {
             "name": "Improper Payment Rate",
             "values": [16, 4, 5, 20, 20, 14]
-          },
+          }
+        ]
+      },
+      "fraud": {
+        "years": [2019, 2020, 2021, 2022, 2023, 2024],
+        "series": [
           {
             "name": "Fraud Rate",
             "values": [18, 10, 10, 14, 17, 8]
@@ -986,13 +994,18 @@ var ALLDATA = {
           }
         ]
       },
-      "improperfraud": {
+      "improper": {
         "years": [2020, 2021, 2022, 2023, 2024, 2025],
         "series": [
           {
             "name": "Improper Payment Rate",
             "values": [4, 5, 20, 20, 14, 5]
-          },
+          }
+        ]
+      },
+      "fraud": {
+        "years": [2020, 2021, 2022, 2023, 2024, 2025],
+        "series": [
           {
             "name": "Fraud Rate",
             "values": [10, 10, 14, 17, 8, 22]
@@ -1148,13 +1161,18 @@ var ALLDATA = {
           }
         ]
       },
-      "improperfraud": {
+      "improper": {
         "years": [2019, 2020, 2021, 2022, 2023, 2024],
         "series": [
           {
             "name": "Improper Payment Rate",
             "values": [4, 18, 18, 10, 12, 17]
-          },
+          }
+        ]
+      },
+      "fraud": {
+        "years": [2019, 2020, 2021, 2022, 2023, 2024],
+        "series": [
           {
             "name": "Fraud Rate",
             "values": [18, 3, 6, 7, 10, 17]
@@ -1308,13 +1326,18 @@ var ALLDATA = {
           }
         ]
       },
-      "improperfraud": {
+      "improper": {
         "years": [2020, 2021, 2022, 2023, 2024, 2025],
         "series": [
           {
             "name": "Improper Payment Rate",
             "values": [18, 18, 10, 12, 17, 13]
-          },
+          }
+        ]
+      },
+      "fraud": {
+        "years": [2020, 2021, 2022, 2023, 2024, 2025],
+        "series": [
           {
             "name": "Fraud Rate",
             "values": [3, 6, 7, 10, 17, 19]
@@ -1470,13 +1493,18 @@ var ALLDATA = {
           }
         ]
       },
-      "improperfraud": {
+      "improper": {
         "years": [2019, 2020, 2021, 2022, 2023, 2024],
         "series": [
           {
             "name": "Improper Payment Rate",
             "values": [18, 5, 19, 10, 12, 17]
-          },
+          }
+        ]
+      },
+      "fraud": {
+        "years": [2019, 2020, 2021, 2022, 2023, 2024],
+        "series": [
           {
             "name": "Fraud Rate",
             "values": [22, 16, 6, 18, 17, 11]
@@ -1630,13 +1658,18 @@ var ALLDATA = {
           }
         ]
       },
-      "improperfraud": {
+      "improper": {
         "years": [2020, 2021, 2022, 2023, 2024, 2025],
         "series": [
           {
             "name": "Improper Payment Rate",
             "values": [5, 19, 10, 12, 17, 16]
-          },
+          }
+        ]
+      },
+      "fraud": {
+        "years": [2020, 2021, 2022, 2023, 2024, 2025],
+        "series": [
           {
             "name": "Fraud Rate",
             "values": [16, 6, 18, 17, 11, 22]
@@ -2197,28 +2230,6 @@ function updateDashboard(baseYear, category, stateCode = "US") {
   }
 
   if (
-    (category === "program" || category === "overview") &&
-    stateData.improperfraud
-  ) {
-    const ifData = {
-      years: yearsRange,
-      series: stateData.improperfraud.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.improperfraud.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderImproperFraudChart(
-      category === "overview"
-        ? "overview_improper"
-        : "improperfraud_chart_container",
-      ifData
-    );
-  }
-
-  if (
     (category === "benefit" || category === "overview") &&
     stateData.timeliness
   ) {
@@ -2262,6 +2273,46 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     );
   }
 
+  //improper payment
+
+  if (category === "overview" && stateData.improper) {
+    const improper_data = {
+      years: yearsRange,
+      series: stateData.improper.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.improper.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+
+    renderLineChart("improper_chart_container", improper_data, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
+  }
+
+  //fraud rate
+
+  if (category === "overview" && stateData.fraud) {
+    const fraud_data = {
+      years: yearsRange,
+      series: stateData.fraud.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.fraud.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+
+    renderLineChart("fraud_chart_container", fraud_data, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
+  }
+
   //quality_sep
 
   if (category === "overview" && stateData.quality_sep) {
@@ -2282,7 +2333,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     });
   }
 
-  //new metric dash logic for inserting overview logic_metric 2
+  //quality_nonsep
 
   if (category === "overview" && stateData.quality_nonsep) {
     const qualitynonsep_data = {

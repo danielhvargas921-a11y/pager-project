@@ -515,28 +515,6 @@ function updateDashboard(baseYear, category, stateCode = "US") {
   }
 
   if (
-    (category === "program" || category === "overview") &&
-    stateData.improperfraud
-  ) {
-    const ifData = {
-      years: yearsRange,
-      series: stateData.improperfraud.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.improperfraud.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderImproperFraudChart(
-      category === "overview"
-        ? "overview_improper"
-        : "improperfraud_chart_container",
-      ifData
-    );
-  }
-
-  if (
     (category === "benefit" || category === "overview") &&
     stateData.timeliness
   ) {
@@ -580,6 +558,46 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     );
   }
 
+  //improper payment
+
+  if (category === "overview" && stateData.improper) {
+    const improper_data = {
+      years: yearsRange,
+      series: stateData.improper.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.improper.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+
+    renderLineChart("improper_chart_container", improper_data, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
+  }
+
+  //fraud rate
+
+  if (category === "overview" && stateData.fraud) {
+    const fraud_data = {
+      years: yearsRange,
+      series: stateData.fraud.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.fraud.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+
+    renderLineChart("fraud_chart_container", fraud_data, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
+  }
+
   //quality_sep
 
   if (category === "overview" && stateData.quality_sep) {
@@ -600,7 +618,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     });
   }
 
-  //new metric dash logic for inserting overview logic_metric 2
+  //quality_nonsep
 
   if (category === "overview" && stateData.quality_nonsep) {
     const qualitynonsep_data = {
