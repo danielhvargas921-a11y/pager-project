@@ -351,66 +351,6 @@ function renderComparisonTable(containerId, tableData, baseYear) {
 </div>`;
 }
 
-//validation table
-
-function renderValidationTable(stateCode) {
-  const container = document.getElementById("overview_validation_table");
-  container.innerHTML = ""; // clear old content
-
-  // Find the row in validation_table for the selected state
-  const row = ALLDATA.validation_table.find((r) => r.State === stateCode);
-  if (!row) {
-    container.innerHTML = "<p class='text-muted'>No data available</p>";
-    return;
-  }
-
-  // Metrics to include as columns
-  const metrics = [
-    "First Payment Timeliness (14 days)",
-    "First Payment Timeliness (21 days)",
-    "Nonmonetary Determination",
-    "Improper Payment Rate",
-    "Fraud Rate",
-  ];
-
-  // Build the metric values with shading
-  const values = metrics
-    .map((metric) => {
-      const val = row[metric] ?? null;
-      let displayVal = val !== null ? `${val}%` : "NA";
-
-      let bgColor = "white";
-      if (val !== null) {
-        if (val >= 70) bgColor = "#d4edda"; // green
-        else if (val >= 40) bgColor = "#fff3cd"; // yellow
-        else bgColor = "#f8d7da"; // red
-      }
-
-      return `<td style="background-color:${bgColor}; text-align:center;">${displayVal}</td>`;
-    })
-    .join("");
-
-  // Build the table
-  container.innerHTML = `
-<div class="table-responsive">
-<table class="table table-bordered validation-table text-center">
-<thead>
-<tr>
-<th>State</th>
-${metrics.map((m) => `<th>${m}</th>`).join("")}
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><b>${stateCode}</b></td>
-${values}
-</tr>
-</tbody>
-</table>
-</div>
-`;
-}
-
 // ------------------- Selectors -------------------
 function renderBaseYearSelector(containerId, years, defaultYear) {
   const container = document.getElementById(containerId);
@@ -698,13 +638,6 @@ function updateDashboard(baseYear, category, stateCode = "US") {
       threshold: 50,
       thresholdLabel: "Target (50%)",
     });
-  }
-
-  //validation_table
-
-  if (category === "overview" && ALLDATA.validation_table) {
-    const stateCode = isNational ? "US" : selectedState;
-    renderValidationTable(stateCode);
   }
 }
 

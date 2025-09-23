@@ -81,7 +81,7 @@ annual_multi_year <- function(df, base_year, range, metrics, state = "US", n_yea
 # ---------------- Build data ----------------
 all_years <- c(2024, 2025)
 all_states <- unique(df_raw$State)
-all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
+# all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
 
 all_data <- list()
 
@@ -325,28 +325,6 @@ section_html <- glue('
       <!-- Left Column -->
       <div class="overview-col left">
 
-        <div class="chart-block" data-category="overview">
-          <h4>First Payment Timeliness</h4>
-          <p class="chart-subtitle">Percent of payments made within 14 and 21 days</p>
-          <div id="overview_timeliness" class="chart-container"></div>
-        </div>
-
-        <div class="chart-block" data-category="overview">
-          <h4>Nonmonetary Determinations</h4>
-          <p class="chart-subtitle">Percent of determinations meeting ALP (80%)</p>
-          <div id="overview_nonmonetary" class="chart-container"></div>
-        </div>
-
-        <div class="chart-block" data-category="overview">
-          <h4>Fraud Rate</h4>
-          <p class="chart-subtitle">Percent of overpayments classified as improper</p>
-          <div id="fraud_chart_container" class="chart-container"></div>
-        </div>
-
-      </div>
-
-      <!-- Right Column -->
-      <div class="overview-col right">
 
         <div class="chart-block" data-category="overview">
           <h4>Improper Payment Rate</h4>
@@ -355,9 +333,35 @@ section_html <- glue('
         </div>
 
         <div class="chart-block" data-category="overview">
+          <h4>First Payment Timeliness</h4>
+          <p class="chart-subtitle">Percent of payments made within 14 and 21 days</p>
+          <div id="overview_timeliness" class="chart-container"></div>
+        </div>
+
+        <div class="chart-block" data-category="overview">
           <h4>Quality Saparation</h4>
           <p class="chart-subtitle">Test Test</p>
           <div id="overview_quality_sep" class="chart-container"></div>
+        </div>
+
+
+
+      </div>
+
+      <!-- Right Column -->
+      <div class="overview-col right">
+
+
+        <div class="chart-block" data-category="overview">
+          <h4>Fraud Rate</h4>
+          <p class="chart-subtitle">Percent of overpayments classified as improper</p>
+          <div id="fraud_chart_container" class="chart-container"></div>
+        </div>
+
+        <div class="chart-block" data-category="overview">
+          <h4>Nonmonetary Determinations</h4>
+          <p class="chart-subtitle">Percent of determinations meeting ALP (80%)</p>
+          <div id="overview_nonmonetary" class="chart-container"></div>
         </div>
 
         <div class="chart-block" data-category="overview">
