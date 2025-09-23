@@ -109,6 +109,37 @@ for (st in all_states) {
       check.names = FALSE
     )
 
+
+    # --- Build validation table ---
+    validation_metrics <- c(
+      "First Payment Timeliness (14 days)",
+      "First Payment Timeliness (21 days)",
+      "Nonmonetary Determination",
+      "Improper Payment Rate",
+      "Fraud Rate"
+    )
+
+    # For each state, grab the most recent year’s values
+    validation_table <- lapply(all_states, function(st) {
+      latest_year <- max(all_years)
+      vals <- annual_last_month(df_raw, latest_year, year_range, validation_metrics, state = st)
+      if (is.null(vals)) {
+        return(NULL)
+      }
+      data.frame(State = st, t(vals), stringsAsFactors = FALSE)
+    })
+
+    validation_table <- do.call(rbind, validation_table)
+
+    # Clean column names
+    colnames(validation_table) <- c("State", validation_metrics)
+
+    # Store into ALLDATA so JS can use it
+    all_data$validation_table <- validation_table
+
+
+    # all plots being built #####################
+
     benefit_table_df <- NULL
 
     # Timeliness table
@@ -336,7 +367,13 @@ section_html <- glue('
         </div>
 
       </div>
+
     </div>
+
+        <div class="overview-validation chart-block mt-4" data-category="overview">
+          <h4>Data Validation Table</h4>
+          <div id="overview_validation_table" class="comparison-table"></div>
+        </div>
 
     <!-- ================= PROGRAM ================= -->
     <div class="chart-block" data-category="program">

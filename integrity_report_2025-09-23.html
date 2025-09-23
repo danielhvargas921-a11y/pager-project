@@ -498,6 +498,25 @@ body.exporting #page-header .toggle-pill {
     max-width: 1200px;
   }
 }
+
+/* validation table settings */
+
+.validation-table th {
+  background-color: #0a2239 !important;
+  color: #fff !important;
+}
+
+.validation-table td {
+  font-weight: 500;
+  text-align: center;
+}
+
+.overview-validation h4 {
+  text-align: center;
+  font-weight: 600;
+  color: #0a2239;
+  margin-bottom: 15px;
+}
 </style>
   </head>
   <body class="bg-light">
@@ -579,7 +598,7 @@ body.exporting #page-header .toggle-pill {
             <img
               src="https://labornet.dol.gov/OPA/Seal/images/DOL-MasterLogo_Color300.png"
               alt="Introduction Graphic"
-              class="img-fluid rounded shadow-sm"
+              class="img-fluid rounded"
               style="max-height: 200px"
             />
           </div>
@@ -667,7 +686,13 @@ body.exporting #page-header .toggle-pill {
         </div>
 
       </div>
+
     </div>
+
+        <div class="overview-validation chart-block mt-4" data-category="overview">
+          <h4>Data Validation Table</h4>
+          <div id="overview_validation_table" class="comparison-table"></div>
+        </div>
 
     <!-- ================= PROGRAM ================= -->
     <div class="chart-block" data-category="program">
@@ -709,6 +734,32 @@ body.exporting #page-header .toggle-pill {
 
     <script>
 var ALLDATA = {
+  "validation_table": [
+    {
+      "State": "AK",
+      "First Payment Timeliness (14 days)": 92.8,
+      "First Payment Timeliness (21 days)": 86.6,
+      "Nonmonetary Determination": 88,
+      "Improper Payment Rate": 5,
+      "Fraud Rate": 22
+    },
+    {
+      "State": "AL",
+      "First Payment Timeliness (14 days)": 51.6,
+      "First Payment Timeliness (21 days)": 63.8,
+      "Nonmonetary Determination": 84,
+      "Improper Payment Rate": 13,
+      "Fraud Rate": 19
+    },
+    {
+      "State": "US",
+      "First Payment Timeliness (14 days)": 76.1,
+      "First Payment Timeliness (21 days)": 69,
+      "Nonmonetary Determination": 62,
+      "Improper Payment Rate": 16,
+      "Fraud Rate": 22
+    }
+  ],
   "AK": {
     "2024": {
       "pie": {
@@ -2019,6 +2070,8 @@ function renderLineChart(containerId, data, options = {}, exportMode = false) {
   charts[containerId] = chart;
 }
 
+//comparison table
+
 function renderComparisonTable(containerId, tableData, baseYear) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -2062,6 +2115,66 @@ function renderComparisonTable(containerId, tableData, baseYear) {
     <tbody>${rows}</tbody>
   </table>
 </div>`;
+}
+
+//validation table
+
+function renderValidationTable(stateCode) {
+  const container = document.getElementById("overview_validation_table");
+  container.innerHTML = ""; // clear old content
+
+  // Find the row in validation_table for the selected state
+  const row = ALLDATA.validation_table.find((r) => r.State === stateCode);
+  if (!row) {
+    container.innerHTML = "<p class='text-muted'>No data available</p>";
+    return;
+  }
+
+  // Metrics to include as columns
+  const metrics = [
+    "First Payment Timeliness (14 days)",
+    "First Payment Timeliness (21 days)",
+    "Nonmonetary Determination",
+    "Improper Payment Rate",
+    "Fraud Rate",
+  ];
+
+  // Build the metric values with shading
+  const values = metrics
+    .map((metric) => {
+      const val = row[metric] ?? null;
+      let displayVal = val !== null ? `${val}%` : "NA";
+
+      let bgColor = "white";
+      if (val !== null) {
+        if (val >= 70) bgColor = "#d4edda"; // green
+        else if (val >= 40) bgColor = "#fff3cd"; // yellow
+        else bgColor = "#f8d7da"; // red
+      }
+
+      return `<td style="background-color:${bgColor}; text-align:center;">${displayVal}</td>`;
+    })
+    .join("");
+
+  // Build the table
+  container.innerHTML = `
+<div class="table-responsive">
+<table class="table table-bordered validation-table text-center">
+<thead>
+<tr>
+<th>State</th>
+${metrics.map((m) => `<th>${m}</th>`).join("")}
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><b>${stateCode}</b></td>
+${values}
+</tr>
+</tbody>
+</table>
+</div>
+`;
 }
 
 // ------------------- Selectors -------------------
@@ -2351,6 +2464,13 @@ function updateDashboard(baseYear, category, stateCode = "US") {
       threshold: 50,
       thresholdLabel: "Target (50%)",
     });
+  }
+
+  //validation_table
+
+  if (category === "overview" && ALLDATA.validation_table) {
+    const stateCode = isNational ? "US" : selectedState;
+    renderValidationTable(stateCode);
   }
 }
 
