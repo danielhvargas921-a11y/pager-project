@@ -447,8 +447,7 @@ body.exporting #page-header .toggle-pill {
 
 .intro-row {
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  align-items: stretch; /* makes both columns the same height */
 }
 
 .intro-col-text {
@@ -499,23 +498,10 @@ body.exporting #page-header .toggle-pill {
   }
 }
 
-/* validation table settings */
-
-.validation-table th {
-  background-color: #0a2239 !important;
-  color: #fff !important;
-}
-
-.validation-table td {
-  font-weight: 500;
-  text-align: center;
-}
-
-.overview-validation h4 {
-  text-align: center;
-  font-weight: 600;
-  color: #0a2239;
-  margin-bottom: 15px;
+.intro-image {
+  display: flex;
+  justify-content: center; /* center horizontally */
+  align-items: center; /* center vertically */
 }
 </style>
   </head>
@@ -566,9 +552,10 @@ body.exporting #page-header .toggle-pill {
     <div id="main-content" class="p-4">
       <!-- INTRO SECTION -->
       <div id="intro-container" class="report-container p-4 mb-4">
-        <h2 class="text-center mb-4">UI Performance Scorecard</h2>
         <div class="intro-row d-flex">
           <div class="flex-grow-1 pe-4 col-9">
+            <h2 class="text-center mb-4">UI Performance Scorecard</h2>
+
             <p>
               The quarterly state UI Performs Core Measures and Integrity Score
               Cards show states' performance relative to Acceptable Levels of
