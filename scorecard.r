@@ -9,9 +9,8 @@ library(dplyr)
 library(lubridate)
 
 # hardcoded variables
-
 year_range <- "Jul-Jun"
-base_path <- "C:/Users/Vargas.Daniel.H/Desktop/SCORE CARD PROJECT/main/scorecard/pager-project"
+base_path <- "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
 
 f <- file.path(base_path, "scorecard_data.csv")
 df_raw <- read.csv(f, stringsAsFactors = FALSE, header = TRUE, check.names = FALSE)
@@ -81,7 +80,7 @@ annual_multi_year <- function(df, base_year, range, metrics, state = "US", n_yea
 # ---------------- Build data ----------------
 all_years <- c(2024, 2025)
 all_states <- unique(df_raw$State)
-# all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
+all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
 
 all_data <- list()
 
@@ -109,37 +108,7 @@ for (st in all_states) {
       check.names = FALSE
     )
 
-
-    # --- Build validation table ---
-    validation_metrics <- c(
-      "First Payment Timeliness (14 days)",
-      "First Payment Timeliness (21 days)",
-      "Nonmonetary Determination",
-      "Improper Payment Rate",
-      "Fraud Rate"
-    )
-
-    # For each state, grab the most recent year’s values
-    validation_table <- lapply(all_states, function(st) {
-      latest_year <- max(all_years)
-      vals <- annual_last_month(df_raw, latest_year, year_range, validation_metrics, state = st)
-      if (is.null(vals)) {
-        return(NULL)
-      }
-      data.frame(State = st, t(vals), stringsAsFactors = FALSE)
-    })
-
-    validation_table <- do.call(rbind, validation_table)
-
-    # Clean column names
-    colnames(validation_table) <- c("State", validation_metrics)
-
-    # Store into ALLDATA so JS can use it
-    all_data$validation_table <- validation_table
-
-
-    # all plots being built #####################
-
+    # benefit tables
     benefit_table_df <- NULL
 
     # Timeliness table
@@ -174,13 +143,27 @@ for (st in all_states) {
       benefit_table_df <- rbind(benefit_table_df, nm_df)
     }
 
-    # bump table
-    counts_df <- annual_multi_year(df_raw, y, year_range, metrics_for_pie, state = st, n_years = 6)
+    # ---- OPTIMIZED MULTI-YEAR: one call for all metrics ----
+    multi_all <- annual_multi_year(
+      df_raw,
+      y,
+      year_range,
+      c(metrics_for_pie,
+        metrics_timeliness,
+        "Nonmonetary Determination",
+        metrics_improperfraud,
+        "Quality (Separation)",
+        "Quality (Non - Separation)"),
+      state = st,
+      n_years = 6
+    )
+
+    # bump chart
     bump_data <- NULL
-    if (!is.null(counts_df)) {
-      row_totals <- rowSums(counts_df[, metrics_for_pie], na.rm = TRUE)
-      prop_df <- as.data.frame(round(100 * sweep(counts_df[, metrics_for_pie], 1, row_totals, "/"), 1))
-      prop_df$Year <- counts_df$Year
+    if (!is.null(multi_all)) {
+      row_totals <- rowSums(multi_all[, metrics_for_pie], na.rm = TRUE)
+      prop_df <- as.data.frame(round(100 * sweep(multi_all[, metrics_for_pie], 1, row_totals, "/"), 1))
+      prop_df$Year <- multi_all$Year
 
       base_row_idx <- which(prop_df$Year == y)
       base_vals_p <- as.numeric(prop_df[base_row_idx, metrics_for_pie])
@@ -197,71 +180,58 @@ for (st in all_states) {
       )
     }
 
-    # --- TIMELINESS ---
+    # timeliness
     timeliness_data <- NULL
-    if (!is.null(t_vals)) {
-      multi_t <- annual_multi_year(df_raw, y, year_range, metrics_timeliness, state = st, n_years = 6)
+    if (!is.null(multi_all) && all(metrics_timeliness %in% names(multi_all))) {
       t_series <- lapply(metrics_timeliness, function(m) {
-        list(name = m, values = as.numeric(multi_t[[m]]))
+        list(name = m, values = as.numeric(multi_all[[m]]))
       })
-      timeliness_data <- list(years = as.numeric(multi_t$Year), series = t_series)
+      timeliness_data <- list(years = as.numeric(multi_all$Year), series = t_series)
     }
 
-    # --- NONMONETARY ---
+    # nonmonetary
     nm_data <- NULL
-    if (!is.null(nm_vals)) {
-      multi_nm <- annual_multi_year(df_raw, y, year_range, "Nonmonetary Determination", state = st, n_years = 6)
-      nm_series <- list(list(name = "Nonmonetary Determination", values = as.numeric(multi_nm[["Nonmonetary Determination"]])))
-      nm_data <- list(years = as.numeric(multi_nm$Year), series = nm_series)
+    if (!is.null(multi_all) && "Nonmonetary Determination" %in% names(multi_all)) {
+      nm_data <- list(
+        years = as.numeric(multi_all$Year),
+        series = list(list(name = "Nonmonetary Determination", values = as.numeric(multi_all[["Nonmonetary Determination"]])))
+      )
     }
 
-    # --- IMPROPER/FRAUD ---
+    # improper
     improper_data <- NULL
+    if (!is.null(multi_all) && "Improper Payment Rate" %in% names(multi_all)) {
+      improper_data <- list(
+        years = as.numeric(multi_all$Year),
+        series = list(list(name = "Improper Payment Rate", values = as.numeric(multi_all[["Improper Payment Rate"]])))
+      )
+    }
+
+    # fraud
     fraud_data <- NULL
-    if (all(metrics_improperfraud %in% names(df_raw))) {
-      if_vals <- annual_last_month(df_raw, y, year_range, metrics_improperfraud, state = st)
-      if (!is.null(if_vals)) {
-        multi_if <- annual_multi_year(df_raw, y, year_range, metrics_improperfraud, state = st, n_years = 6)
-
-        # Improper Payment Rate
-        if ("Improper Payment Rate" %in% names(multi_if)) {
-          improper_data <- list(
-            years = as.numeric(multi_if$Year),
-            series = list(list(name = "Improper Payment Rate", values = as.numeric(multi_if[["Improper Payment Rate"]])))
-          )
-        }
-
-        # Fraud Rate
-        if ("Fraud Rate" %in% names(multi_if)) {
-          fraud_data <- list(
-            years = as.numeric(multi_if$Year),
-            series = list(list(name = "Fraud Rate", values = as.numeric(multi_if[["Fraud Rate"]])))
-          )
-        }
-      }
+    if (!is.null(multi_all) && "Fraud Rate" %in% names(multi_all)) {
+      fraud_data <- list(
+        years = as.numeric(multi_all$Year),
+        series = list(list(name = "Fraud Rate", values = as.numeric(multi_all[["Fraud Rate"]])))
+      )
     }
 
-    # --- Quality (Separation) ---
-
+    # quality (separation)
     quality_sep_data <- NULL
-
-    qs_vals <- annual_last_month(df_raw, y, year_range, "Quality (Separation)", state = st)
-    if (!is.null(qs_vals)) {
-      qs_nm <- annual_multi_year(df_raw, y, year_range, "Quality (Separation)", state = st, n_years = 6)
-      qs_series <- list(list(name = "Quality (Separation)", values = as.numeric(qs_nm[["Quality (Separation)"]])))
-      quality_sep_data <- list(years = as.numeric(qs_nm$Year), series = qs_series)
+    if (!is.null(multi_all) && "Quality (Separation)" %in% names(multi_all)) {
+      quality_sep_data <- list(
+        years = as.numeric(multi_all$Year),
+        series = list(list(name = "Quality (Separation)", values = as.numeric(multi_all[["Quality (Separation)"]])))
+      )
     }
 
-
-    # --- Quality (Non - Separation) ---
-
+    # quality (non-separation)
     quality_nonsep_data <- NULL
-
-    nqs_vals <- annual_last_month(df_raw, y, year_range, "Quality (Non - Separation)", state = st)
-    if (!is.null(nqs_vals)) {
-      qns_nm <- annual_multi_year(df_raw, y, year_range, "Quality (Non - Separation)", state = st, n_years = 6)
-      qns_series <- list(list(name = "Quality (Non - Separation)", values = as.numeric(qns_nm[["Quality (Non - Separation)"]])))
-      quality_nonsep_data <- list(years = as.numeric(qns_nm$Year), series = qns_series)
+    if (!is.null(multi_all) && "Quality (Non - Separation)" %in% names(multi_all)) {
+      quality_nonsep_data <- list(
+        years = as.numeric(multi_all$Year),
+        series = list(list(name = "Quality (Non - Separation)", values = as.numeric(multi_all[["Quality (Non - Separation)"]])))
+      )
     }
 
     # assemble per year
@@ -286,7 +256,7 @@ for (st in all_states) {
 # ---------------- Export JS ----------------
 alldata_js <- paste0(
   "<script>\nvar ALLDATA = ",
-  jsonlite::toJSON(all_data, dataframe = "rows", auto_unbox = TRUE, pretty = TRUE),
+  jsonlite::toJSON(all_data, dataframe = "rows", auto_unbox = TRUE),
   ";\n</script>\n"
 )
 
@@ -294,7 +264,7 @@ alldata_js <- paste0(
 state_list <- sort(setdiff(unique(df_raw$State), "US"))
 states_js <- paste0(
   "<script>\nvar STATE_CODES = ",
-  jsonlite::toJSON(state_list, auto_unbox = TRUE, pretty = FALSE),
+  jsonlite::toJSON(state_list, auto_unbox = TRUE),
   ";\n</script>\n"
 )
 
@@ -415,9 +385,6 @@ section_html <- glue('
 </div>
 ')
 
-
-
-
 final_html <- template |>
   gsub("<!--INLINE_CSS-->", css_code, x = _, fixed = TRUE) |>
   gsub("<!--INLINE_JS-->", js_code, x = _, fixed = TRUE) |>
@@ -425,8 +392,6 @@ final_html <- template |>
   gsub("<!--STATE_JS-->", states_js, x = _, fixed = TRUE) |>
   gsub("<!--DATE-->", as.character(today), x = _, fixed = TRUE) |>
   gsub("<!--METRIC_SECTIONS-->", section_html, x = _, fixed = TRUE)
-
-
 
 outfile <- file.path(base_path, glue("integrity_report_{today}.html"))
 writeLines(enc2utf8(final_html), outfile, useBytes = TRUE)
