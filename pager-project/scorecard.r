@@ -11,7 +11,7 @@ library(lubridate)
 # hardcoded variables
 
 year_range <- "Jul-Jun"
-base_path <- "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
+base_path <- "C:/Users/Vargas.Daniel.H/Desktop/SCORE CARD PROJECT/main/scorecard/pager-project"
 
 f <- file.path(base_path, "scorecard_data.csv")
 df_raw <- read.csv(f, stringsAsFactors = FALSE, header = TRUE, check.names = FALSE)
@@ -81,7 +81,7 @@ annual_multi_year <- function(df, base_year, range, metrics, state = "US", n_yea
 # ---------------- Build data ----------------
 all_years <- c(2024, 2025)
 all_states <- unique(df_raw$State)
-all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
+# all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
 
 all_data <- list()
 
@@ -246,48 +246,11 @@ template <- readLines(file.path(base_path, "scorecard_template.html"))
 today <- Sys.Date()
 
 section_html <- glue('
-<div class="metric-section" id="section_dashboard">
+<div class="section bg-white shadow-sm rounded metric-section" id="section_dashboard">
   <!-- Plots view -->
   <div id="plots-view">
 
-    <!-- ================= OVERVIEW ================= -->
-    <div class="chart-block" data-category="overview">
-      <h4>First Payment Timeliness</h4>
-      <p class="chart-subtitle">Percent of payments made within 14 and 21 days</p>
-      <div id="overview_timeliness" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>Nonmonetary Determinations</h4>
-      <p class="chart-subtitle">Percent of determinations meeting ALP (80%)</p>
-      <div id="overview_nonmonetary" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>Improper Payment Rate</h4>
-      <p class="chart-subtitle">Percent of overpayments classified as improper</p>
-      <div id="overview_improper" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>[Placeholder Slot]</h4>
-      <p class="chart-subtitle">Space reserved for future chart</p>
-      <div class="chart-container placeholder-box"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>[Placeholder Slot]</h4>
-      <p class="chart-subtitle">Space reserved for future chart</p>
-      <div class="chart-container placeholder-box"></div>
-    </div>
-
-    <!-- Validation Table -->
-    <div class="chart-block" data-category="overview">
-      <h4>Data Validation Table</h4>
-      <div class="table-placeholder">[Validation Table Placeholder]</div>
-    </div>
-
-    <!-- ================= PROGRAM ================= -->
+    <!-- Program Integrity Measures -->
     <div class="chart-block" data-category="program">
       <h3>Root Causes of Overpayments</h3>
       <div id="pie_chart_container" class="chart-container"></div>
@@ -303,7 +266,7 @@ section_html <- glue('
       <div id="improperfraud_chart_container" class="chart-container"></div>
     </div>
 
-    <!-- ================= BENEFIT ================= -->
+    <!-- Benefit Measures -->
     <div class="chart-block" data-category="benefit">
       <h3>First Payment Timeliness (FPT)</h3>
       <div id="timeliness_chart_container" class="chart-container"></div>
@@ -323,7 +286,6 @@ section_html <- glue('
 </div>
 ')
 
-
 final_html <- template |>
   gsub("<!--INLINE_CSS-->", css_code, x = _, fixed = TRUE) |>
   gsub("<!--INLINE_JS-->", js_code, x = _, fixed = TRUE) |>
@@ -331,8 +293,6 @@ final_html <- template |>
   gsub("<!--STATE_JS-->", states_js, x = _, fixed = TRUE) |>
   gsub("<!--DATE-->", as.character(today), x = _, fixed = TRUE) |>
   gsub("<!--METRIC_SECTIONS-->", section_html, x = _, fixed = TRUE)
-
-
 
 outfile <- file.path(base_path, glue("integrity_report_{today}.html"))
 writeLines(enc2utf8(final_html), outfile, useBytes = TRUE)

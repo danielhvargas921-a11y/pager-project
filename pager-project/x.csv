@@ -1,0 +1,21 @@
+Metric,CT,MA,ME,NH,NJ,NY,PR,RI,VI,VT
+TAX,,,,,,,,,,
+New Employer Status Determinations,82.7,62.6,82.7,86.4,88.2,88.8,88.6,89.5,100,77.7
+Tax Quality,f,f,p,p,f,p,f,p,p,f
+Effective Audit Measure,f,f,p,p,f,f,f,p,—,f
+BENEFITS,,,,,,,,,,
+All First Payment in 14/21 days,71.4,68.8,85.9,79.1,75.3,73.3,65.9,90.4,65.2,57.9
+Intrastate UI full weeks within 14/21 days,72.4,69.0,86.6,79.7,75.9,73.5,66.7,90.6,66.9,59.2
+Interstate UI full weeks within 14/21 days,64.8,67.1,75.0,76.6,69.1,64.7,55.9,85.5,41.7,54.5
+Intrastate UI full weeks within 35 days,87.0,87.6,96.2,94.2,88.8,85.5,85.0,96.0,92.6,77.0
+Interstate UI full weeks within 35 days,80.7,85.5,93.3,90.2,85.1,79.9,69.5,93.3,70.8,72.6
+NONMONETARY DETERMINATIONS,,,,,,,,,,
+Nonmonetary Determinations in 21 days,80.9,55.1,90.7,90.6,67.8,52.8,66.1,73.5,65.0,22.4
+Nonmonetary Separation Quality,70.2,55.1,74.4,92.2,65.5,64.1,24.3,53.9,★,47.1
+Nonmonetary Nonseparation Quality,79.9,80.7,79.2,73.1,71.0,66.2,44.0,76.3,★,33.5
+APPEALS (LS),,,,,,,,,,
+Average Age of Pending LAA,338.8,21.0,14.3,44.3,147.7,62.3,62.6,26.5,18.3,70.1
+Average Age of Pending HAA,245.8,29.0,33.0,125.5,180.7,42.5,39.3,22.4,—,43.3
+LA decisions within 30 days,18.5,58.2,78.5,55.5,13.2,1.2,37.4,41.1,72.4,2.4
+LA decisions within 45 days,36.0,78.4,92.7,86.2,15.6,5.3,64.1,62.9,86.2,2.5
+Quality of Lower Authority Appeals,97.5,100.0,93.8,96.1,90.6,100.0,94.9,94.9,★,100.0

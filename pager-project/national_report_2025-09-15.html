@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>National Report</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+/* ---------------- Sidebar ---------------- */
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: #0a2239;
+  color: white;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+#sidebar h4 {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+/* ---------------- Main Content ---------------- */
+#main-content {
+  margin-left: 270px;
+  padding: 20px;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* ---------------- Legend ---------------- */
+.legend-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #dcdcdc;
+}
+
+.legend-list li {
+  margin-bottom: 4px;
+}
+
+.legend-symbol {
+  display: inline-block;
+  min-width: 20px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.legend-box {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.legend-box.pass {
+  background-color: #155724; /* green */
+}
+
+.legend-box.fail {
+  background-color: #721c24; /* red */
+}
+
+/* ---------------- Section Layout ---------------- */
+.section {
+  margin: 0 auto 40px auto;
+  max-width: 1200px;
+}
+
+.section h3,
+.section h4 {
+  font-weight: 600;
+  color: #0a2239;
+}
+
+/* ---------------- Chart Containers ---------------- */
+.chart-container {
+  width: 100% !important;
+  height: 500px !important;
+  margin: 0 auto 30px auto;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background-color: #ffffff;
+}
+
+/* ---------------- Export Button ---------------- */
+#main-content .btn.btn-primary {
+  background-color: transparent !important;
+  color: #0a2239 !important;
+  border: 1px solid #0a2239 !important;
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#main-content .btn.btn-primary:hover {
+  background-color: #e6eef5 !important;
+  color: #0a2239 !important;
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 768px) {
+  #sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  #main-content {
+    margin-left: 0;
+  }
+}
+
+@media print {
+  #sidebar {
+    display: none !important;
+  }
+  #main-content {
+    margin: 0 !important;
+    padding: 0 10px !important;
+    width: 100% !important;
+  }
+  .section {
+    page-break-after: always;
+  }
+  .chart-container {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 16/9;
+    page-break-inside: avoid;
+  }
+}
+
+/* ---------------- Report Toggle (Vertical Buttons) ---------------- */
+#sidebarReportToggle .btn {
+  width: 100%;
+  text-align: center;
+  color: #ffffff;
+  border: 1px solid #ffffff44;
+  background-color: transparent;
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s, box-shadow 0.2s;
+}
+
+#sidebarReportToggle .btn.active {
+  background-color: #ffffff;
+  color: #0a2239;
+  font-weight: 600;
+}
+
+#sidebarReportToggle .btn:not(.active):hover {
+  background-color: #173a5e;
+  color: #ffffff;
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.2);
+}
+</style>
+  </head>
+  <body class="bg-light">
+    <div id="sidebar" class="bg-dark text-white p-3">
+      <h4 class="mb-3">U.S. Department of Labor</h4>
+
+      <!-- Sidebar Report Toggle -->
+      <div id="sidebarReportToggle" class="d-flex flex-column mb-3">
+        <button type="button" class="btn active mb-2" data-view="national">
+          National Report
+        </button>
+        <button type="button" class="btn mb-2" data-view="regional">
+          Regional Report
+        </button>
+        <button type="button" class="btn" data-view="state">
+          State Report
+        </button>
+      </div>
+
+      <div class="mt-3">
+        Last updated:
+        2025-09-15
+      </div>
+    </div>
+
+    <div id="main-content" class="p-4">
+      <!-- Export -->
+      <div class="d-flex justify-content-end mb-4">
+        <button class="btn btn-sm btn-primary" onclick="window.print()">
+          Export Report
+        </button>
+      </div>
+
+      <!-- Metric Sections -->
+        <div class="section p-3 bg-white shadow-sm rounded metric-section" id="section_first_payment">
+    <div class="text-center mb-3">
+      <h3>First Payment</h3>
+      <p class="text-muted">This section shows national and regional trends in the percentage of first payments made on time. Higher values indicate better timeliness.</p>
+    </div>
+
+    <div id="natl_first_payment" class="chart-container"></div>
+    <hr/>
+
+    <div class="text-center mb-3">
+      <h4>Regional Time Series</h4>
+    </div>
+    <div id="region_first_payment_region_1_boston" class="chart-container"></div>
+<div id="region_first_payment_region_2_philadelphia" class="chart-container"></div>
+<div id="region_first_payment_region_3_atlanta" class="chart-container"></div>
+<div id="region_first_payment_region_4_dallas" class="chart-container"></div>
+<div id="region_first_payment_region_5_chicago" class="chart-container"></div>
+<div id="region_first_payment_region_6_san_francisco" class="chart-container"></div>
+  </div>
+
+      <!-- Regional Report -->
+      <div
+        class="section p-3 bg-white shadow-sm rounded"
+        id="regionalSection"
+        style="display: none"
+      >
+        <h3 class="text-center">Regional Report</h3>
+        <div id="regionalContent">[Regional charts]</div>
+      </div>
+
+      <!-- State Report -->
+      <div
+        class="section p-3 bg-white shadow-sm rounded"
+        id="stateSection"
+        style="display: none"
+      >
+        <h3 class="text-center">State Report</h3>
+        <div id="stateContent">[State charts]</div>
+      </div>
+    </div>
+
+    <script>
+var TIMESERIES = {"First Payment":{"TimeType":"Date","National":[{"Date":"2020-01-31","National":92.7},{"Date":"2020-02-29","National":90.0333},{"Date":"2020-03-31","National":97.7333},{"Date":"2020-04-30","National":82.5667},{"Date":"2020-05-31","National":50.7333},{"Date":"2020-06-30","National":41.6667},{"Date":"2020-07-31","National":42.4},{"Date":"2020-08-31","National":39.7333},{"Date":"2020-09-30","National":40.7},{"Date":"2020-10-31","National":34.0667},{"Date":"2020-11-30","National":47.2333},{"Date":"2020-12-31","National":45.4333},{"Date":"2021-01-31","National":57.6},{"Date":"2021-02-28","National":46},{"Date":"2021-03-31","National":38.5333},{"Date":"2021-04-30","National":64.1},{"Date":"2021-05-31","National":64.9},{"Date":"2021-06-30","National":69.3667},{"Date":"2021-07-31","National":46.5333},{"Date":"2021-08-31","National":36.0333},{"Date":"2021-09-30","National":39.5667},{"Date":"2021-10-31","National":36.6667},{"Date":"2021-11-30","National":43.2333},{"Date":"2021-12-31","National":39.6},{"Date":"2022-01-31","National":55.0333},{"Date":"2022-02-28","National":36.6667},{"Date":"2022-03-31","National":40.9333},{"Date":"2022-04-30","National":41.3333},{"Date":"2022-05-31","National":41.3},{"Date":"2022-06-30","National":46.8},{"Date":"2022-07-31","National":60.7333},{"Date":"2022-08-31","National":55.4667},{"Date":"2022-09-30","National":46.7667},{"Date":"2022-10-31","National":41.0333},{"Date":"2022-11-30","National":50.4667},{"Date":"2022-12-31","National":57.0333},{"Date":"2023-01-31","National":65.6},{"Date":"2023-02-28","National":52.8},{"Date":"2023-03-31","National":48.4333},{"Date":"2023-04-30","National":56.1},{"Date":"2023-05-31","National":61.6},{"Date":"2023-06-30","National":70.9},{"Date":"2023-07-31","National":72.6333},{"Date":"2023-08-31","National":64.6667},{"Date":"2023-09-30","National":61.0667},{"Date":"2023-10-31","National":65.0667},{"Date":"2023-11-30","National":67.5667},{"Date":"2023-12-31","National":68.7},{"Date":"2024-01-31","National":72.9333},{"Date":"2024-02-29","National":70.3667},{"Date":"2024-03-31","National":44.1333},{"Date":"2024-04-30","National":47.9333},{"Date":"2024-05-31","National":53.6},{"Date":"2024-06-30","National":60.0667},{"Date":"2024-07-31","National":62.9},{"Date":"2024-08-31","National":61.0667},{"Date":"2024-09-30","National":53.9333},{"Date":"2024-10-31","National":55.9667},{"Date":"2024-11-30","National":52.7667},{"Date":"2024-12-31","National":61.2333},{"Date":"2025-01-31","National":72.2333},{"Date":"2025-02-28","National":67.2667},{"Date":"2025-03-31","National":57.7333},{"Date":"2025-04-30","National":56.3667},{"Date":"2025-05-31","National":59.3333},{"Date":"2025-06-30","National":66.5333},{"Date":"2025-07-31","National":70.0333},{"Date":"2025-08-31","National":48.3}],"Regions":{"region_1_boston":{"Label":"Region 1 - Boston","States":{}},"region_2_philadelphia":{"Label":"Region 2 - Philadelphia","States":{"DC":{"Date":["2020-01-31","2020-02-29","2020-03-31","2020-04-30","2020-05-31","2020-06-30","2020-07-31","2020-08-31","2020-09-30","2020-10-31","2020-11-30","2020-12-31","2021-01-31","2021-02-28","2021-03-31","2021-04-30","2021-05-31","2021-06-30","2021-07-31","2021-08-31","2021-09-30","2021-10-31","2021-11-30","2021-12-31","2022-01-31","2022-02-28","2022-03-31","2022-04-30","2022-05-31","2022-06-30","2022-07-31","2022-08-31","2022-09-30","2022-10-31","2022-11-30","2022-12-31","2023-01-31","2023-02-28","2023-03-31","2023-04-30","2023-05-31","2023-06-30","2023-07-31","2023-08-31","2023-09-30","2023-10-31","2023-11-30","2023-12-31","2024-01-31","2024-02-29","2024-03-31","2024-04-30","2024-05-31","2024-06-30","2024-07-31","2024-08-31","2024-09-30","2024-10-31","2024-11-30","2024-12-31","2025-01-31","2025-02-28","2025-03-31","2025-04-30","2025-05-31","2025-06-30","2025-07-31"],"Value":[92.5,93.3,97.1,62.6,51.4,49.8,47.1,34.9,31.1,36.4,35.2,42.8,41.4,29.2,36.9,62.4,47.3,55.6,52.3,42.1,43.5,61.5,77.8,54.4,64,34.6,62.4,39.9,38.6,31.3,52.3,48.2,39.8,21.7,43.2,49.3,56.5,46.1,32.6,32.9,52,55.9,66.1,61.7,63.4,68.9,65.2,70.1,71.7,81.8,30.6,37.5,53.2,60.5,63.2,63.6,61.4,67.1,50.6,53.3,73,82.2,64.5,57.6,63.3,70.3,78.7]},"DE":{"Date":["2020-01-31","2020-02-29","2020-03-31","2020-04-30","2020-05-31","2020-06-30","2020-07-31","2020-08-31","2020-09-30","2020-10-31","2020-11-30","2020-12-31","2021-01-31","2021-02-28","2021-03-31","2021-04-30","2021-05-31","2021-06-30","2021-07-31","2021-08-31","2021-09-30","2021-10-31","2021-11-30","2021-12-31","2022-01-31","2022-02-28","2022-03-31","2022-04-30","2022-05-31","2022-06-30","2022-07-31","2022-08-31","2022-09-30","2022-10-31","2022-11-30","2022-12-31","2023-01-31","2023-02-28","2023-03-31","2023-04-30","2023-05-31","2023-06-30","2023-07-31","2023-08-31","2023-09-30","2023-10-31","2023-11-30","2023-12-31","2024-01-31","2024-02-29","2024-03-31","2024-04-30","2024-05-31","2024-06-30","2024-07-31","2024-08-31","2024-09-30","2024-10-31","2024-11-30","2024-12-31","2025-01-31","2025-02-28","2025-03-31","2025-04-30","2025-05-31","2025-06-30","2025-07-31","2025-08-31"],"Value":[92.9,88.1,98.7,95.2,71,61.1,56.7,48.9,48.3,37.9,51.8,56,67.1,59.3,48.5,76.3,82.8,81.1,36.2,31.1,31.3,26.1,27.8,36.8,58.4,37.8,27.7,36.2,51.1,53.5,63.7,60,51.4,53.8,64.1,64.3,72.3,60.2,55,63,61.5,78.4,76.9,68.7,57,66.5,74.7,71.9,73.8,65.5,47.7,44.8,48.2,52.6,58.8,55.8,42.7,41.7,45.8,64.1,71,54.9,44.9,43.1,42.3,53.3,60.6,48.3]},"MD":{"Date":["2020-01-31","2020-02-29","2020-03-31","2020-04-30","2020-05-31","2020-06-30","2020-07-31","2020-08-31","2020-09-30","2020-10-31","2020-11-30","2020-12-31","2021-01-31","2021-02-28","2021-03-31","2021-04-30","2021-05-31","2021-06-30","2021-07-31","2021-08-31","2021-09-30","2021-10-31","2021-11-30","2021-12-31","2022-01-31","2022-02-28","2022-03-31","2022-04-30","2022-05-31","2022-06-30","2022-07-31","2022-08-31","2022-09-30","2022-10-31","2022-11-30","2022-12-31","2023-01-31","2023-02-28","2023-03-31","2023-04-30","2023-05-31","2023-06-30","2023-07-31","2023-08-31","2023-09-30","2023-10-31","2023-11-30","2023-12-31","2024-01-31","2024-02-29","2024-03-31","2024-04-30","2024-05-31","2024-06-30","2024-07-31","2024-08-31","2024-09-30","2024-10-31","2024-11-30","2024-12-31","2025-01-31","2025-02-28","2025-03-31","2025-04-30","2025-05-31","2025-06-30","2025-07-31"],"Value":[92.7,88.7,97.4,89.9,29.8,14.1,23.4,35.4,42.7,27.9,54.7,37.5,64.3,49.5,30.2,53.6,64.6,71.4,51.1,34.9,43.9,22.4,24.1,27.6,42.7,37.6,32.7,47.9,34.2,55.6,66.2,58.2,49.1,47.6,44.1,57.5,68,52.1,57.7,72.4,71.3,78.4,74.9,63.6,62.8,59.8,62.8,64.1,73.3,63.8,54.1,61.5,59.4,67.1,66.7,63.8,57.7,59.1,61.9,66.3,72.7,64.7,63.8,68.4,72.4,76,70.8]}}},"region_3_atlanta":{"Label":"Region 3 - Atlanta","States":{}},"region_4_dallas":{"Label":"Region 4 - Dallas","States":{}},"region_5_chicago":{"Label":"Region 5 - Chicago","States":{}},"region_6_san_francisco":{"Label":"Region 6 - San Francisco","States":{}}}}};
+</script>
+
+    <script>
+let charts = {}; // Store echarts instances by id
+
+// Render national chart
+function renderNationalChart(containerId, natl, metric, timeType) {
+  let chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+  if (charts[containerId]) echarts.dispose(chartDom);
+  let chart = echarts.init(chartDom);
+
+  let option = {
+    title: { text: `${metric} - National Trend`, left: "center" },
+    tooltip: { trigger: "axis" },
+    xAxis: {
+      type: "category",
+      data: natl.map((d) => d[timeType]),
+      axisLabel: { rotate: 45 },
+    },
+    yAxis: { type: "value", min: 0, max: 100 },
+    series: [
+      {
+        type: "line",
+        data: natl.map((d) => d.National),
+        smooth: true,
+      },
+    ],
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+// Render a single region chart (multiple state lines for that region)
+function renderRegionGroupChart(containerId, regionObj, metric, timeType) {
+  let chartDom = document.getElementById(containerId);
+  if (!chartDom || !regionObj || !regionObj.States) return;
+  if (charts[containerId]) echarts.dispose(chartDom);
+  let chart = echarts.init(chartDom);
+
+  const stateKeys = Object.keys(regionObj.States);
+  if (stateKeys.length === 0) return;
+
+  const firstKey = stateKeys[0];
+  const xDates = regionObj.States[firstKey][timeType];
+
+  let seriesData = stateKeys.map((st) => ({
+    name: st,
+    type: "line",
+    data: regionObj.States[st].Value,
+    smooth: true,
+  }));
+
+  let option = {
+    title: { text: `${metric} - ${regionObj.Label}`, left: "center" },
+    tooltip: { trigger: "axis" },
+    legend: { type: "scroll", top: 30 },
+    xAxis: {
+      type: "category",
+      data: xDates,
+      axisLabel: { rotate: 45 },
+    },
+    yAxis: { type: "value", min: 0, max: 100 },
+    series: seriesData,
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+// Master renderer
+function renderAllMetrics() {
+  Object.keys(TIMESERIES).forEach((metric) => {
+    let safeId = metric.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    let timeType = TIMESERIES[metric].TimeType;
+    let natl = TIMESERIES[metric].National;
+    let regions = TIMESERIES[metric].Regions;
+
+    // National
+    renderNationalChart(`natl_${safeId}`, natl, metric, timeType);
+
+    // One chart per region
+    Object.keys(regions).forEach((regionId) => {
+      renderRegionGroupChart(
+        `region_${safeId}_${regionId}`,
+        regions[regionId],
+        metric,
+        timeType
+      );
+    });
+  });
+}
+
+// Sidebar toggle (unchanged)
+function setupSidebarToggle() {
+  const buttons = document.querySelectorAll("#sidebarReportToggle .btn");
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", function () {
+      buttons.forEach((el) => el.classList.remove("active"));
+      this.classList.add("active");
+      const view = this.getAttribute("data-view");
+      document.querySelectorAll(".metric-section").forEach((sec) => {
+        sec.style.display = view === "national" ? "block" : "none";
+      });
+      document.getElementById("regionalSection").style.display =
+        view === "regional" ? "block" : "none";
+      document.getElementById("stateSection").style.display =
+        view === "state" ? "block" : "none";
+    });
+  });
+}
+
+// Init
+document.addEventListener("DOMContentLoaded", () => {
+  renderAllMetrics();
+  setupSidebarToggle();
+  window.addEventListener("resize", () => {
+    Object.values(charts).forEach((c) => c.resize());
+  });
+});
+</script>
+  </body>
+</html>

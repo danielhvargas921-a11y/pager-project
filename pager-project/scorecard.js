@@ -1,6 +1,6 @@
 let charts = {};
 let currentBaseYear = null;
-let currentCategory = "overview"; // default category
+let currentCategory = "program";
 let currentState = "US";
 
 const metricColors = {
@@ -19,7 +19,7 @@ const metricColors = {
   "Nonmonetary Determination": "#9467bd",
 };
 
-// ------------------- Chart Renderers -------------------
+// -------- Chart Renderers -------------------
 function renderPieChart(containerId, pieData, exportMode = false) {
   let chartDom = document.getElementById(containerId);
   if (!chartDom) return;
@@ -102,13 +102,9 @@ function renderBumpChart(containerId, bumpData, exportMode = false) {
 function renderTimelinessChart(containerId, data, exportMode = false) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
-
-  if (charts[containerId]) {
-    echarts.dispose(chartDom);
-    delete charts[containerId];
-  }
-
+  if (charts[containerId]) echarts.dispose(chartDom);
   const chart = echarts.init(chartDom, null, { renderer: "svg" });
+
   const years = data.years;
   const alpThreshold = 87;
 
@@ -257,7 +253,8 @@ function renderComparisonTable(containerId, tableData, baseYear) {
   tableData.sort((a, b) => b.Current - a.Current);
 
   const rows = tableData
-    .map((row) => {
+    .map((row, idx) => {
+      // Ensure safe text for each field
       const currTxt =
         row.Current != null && !isNaN(row.Current) ? `${row.Current}%` : "NA";
       const prevTxt =
@@ -325,9 +322,7 @@ function renderCategorySelector(containerId) {
 
   const select = document.createElement("select");
   select.className = "form-select form-select-sm";
-
   [
-    { value: "overview", label: "Overview" },
     { value: "program", label: "Program Integrity Measures" },
     { value: "benefit", label: "Benefit Measures" },
   ].forEach((optDef) => {
@@ -352,8 +347,8 @@ function renderStateSelector(containerId, stateCodes, defaultState = "AK") {
   if (!container) return;
 
   const select = document.getElementById("stateDropdown");
-  select.innerHTML = "";
 
+  select.innerHTML = "";
   stateCodes.forEach((code) => {
     const opt = document.createElement("option");
     opt.value = code;
@@ -406,155 +401,101 @@ function updateDashboard(baseYear, category, stateCode = "US") {
 
   const stateData = ALLDATA[stateCode][baseYear];
 
-  // --- Title
+  // --- Update page title dynamically with two lines ---
   const catLabel =
-    category === "program"
-      ? "Program Integrity Measures"
-      : category === "benefit"
-      ? "Benefit Measures"
-      : "Overview";
+    category === "program" ? "Program Integrity Measures" : "Benefit Measures";
   const stateLabel = stateCode === "US" ? "National" : stateCode;
 
   document.getElementById("reportTitle").innerHTML = `
-    <div class="title-main">UI Overpayments Report &mdash; ${baseYear}</div>
+    <div class="title-main">UI Payment Integrity Report &mdash; ${baseYear}</div>
     <div class="title-sub">(${stateLabel}, ${catLabel})</div>
   `;
 
-  // --- Show correct section
-  document
-    .querySelectorAll(".metric-section")
-    .forEach((s) => (s.style.display = "none"));
-  document.getElementById("section_dashboard").style.display = "block";
-
-  // --- Chart visibility
-  document
-    .querySelectorAll(".chart-block")
-    .forEach((b) => (b.style.display = "none"));
+  // --- Toggle chart blocks ---
+  document.querySelectorAll(".chart-block").forEach((block) => {
+    block.style.display = "none";
+  });
   document
     .querySelectorAll(`.chart-block[data-category='${category}']`)
-    .forEach((b) => (b.style.display = "block"));
+    .forEach((block) => {
+      block.style.display = "block";
+    });
 
-  // --- Years range
+  // --- Build pie data ---
+  const pieData = Object.entries(stateData.pie || {}).map(([name, value]) => ({
+    name,
+    value,
+  }));
+
+  // Build the 6-year window (baseYear - 5 through baseYear)
   const yearsRange = [];
   for (let y = baseYear - 5; y <= baseYear; y++) yearsRange.push(y);
 
-  // --- Render charts depending on category
-  if (category === "program" && stateData.pie) {
-    const pieData = Object.entries(stateData.pie || {}).map(
-      ([name, value]) => ({ name, value })
-    );
+  // --- Render charts depending on category ---
+  if (category === "program") {
     renderPieChart("pie_chart_container", pieData);
-  }
 
-  if (category === "program" && stateData.bump) {
-    const bumpData = {
-      years: yearsRange,
-      series: stateData.bump.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.bump.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderBumpChart("bump_chart_container", bumpData);
-  }
+    if (stateData.bump) {
+      const bumpData = {
+        years: yearsRange,
+        series: stateData.bump.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = stateData.bump.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values };
+        }),
+      };
+      renderBumpChart("bump_chart_container", bumpData);
+    }
 
-  if (
-    (category === "program" || category === "overview") &&
-    stateData.improperfraud
-  ) {
-    const ifData = {
-      years: yearsRange,
-      series: stateData.improperfraud.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.improperfraud.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderImproperFraudChart(
-      category === "overview"
-        ? "overview_improper"
-        : "improperfraud_chart_container",
-      ifData
-    );
-  }
+    if (stateData.improperfraud) {
+      const ifData = {
+        years: yearsRange,
+        series: stateData.improperfraud.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = stateData.improperfraud.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values };
+        }),
+      };
+      renderImproperFraudChart("improperfraud_chart_container", ifData);
+    }
+  } else if (category === "benefit") {
+    if (stateData.timeliness) {
+      const timelinessData = {
+        years: yearsRange,
+        series: stateData.timeliness.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = stateData.timeliness.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values };
+        }),
+      };
+      renderTimelinessChart("timeliness_chart_container", timelinessData);
+    }
 
-  if (
-    (category === "benefit" || category === "overview") &&
-    stateData.timeliness
-  ) {
-    const timelinessData = {
-      years: yearsRange,
-      series: stateData.timeliness.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.timeliness.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderTimelinessChart(
-      category === "overview"
-        ? "overview_timeliness"
-        : "timeliness_chart_container",
-      timelinessData
-    );
-  }
-
-  if (
-    (category === "benefit" || category === "overview") &&
-    stateData.nonmonetary
-  ) {
-    const nonmonetaryData = {
-      years: yearsRange,
-      series: stateData.nonmonetary.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.nonmonetary.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderNonmonetaryChart(
-      category === "overview"
-        ? "overview_nonmonetary"
-        : "nonmonetary_chart_container",
-      nonmonetaryData
-    );
-  }
-}
-
-// ------------------- Switch View -------------------
-function switchView(view) {
-  if (!currentBaseYear || !currentState) return;
-
-  if (view === "plots") {
-    document.getElementById("plots-view").style.display = "block";
-    document.getElementById("table-view").style.display = "none";
-    updateDashboard(currentBaseYear, currentCategory, currentState);
-    setTimeout(() => Object.values(charts).forEach((c) => c.resize()), 50);
-  } else {
-    document.getElementById("plots-view").style.display = "none";
-    document.getElementById("table-view").style.display = "block";
-
-    const stateData = ALLDATA[currentState][currentBaseYear];
-    const tableData =
-      currentCategory === "program"
-        ? stateData.table_program
-        : stateData.table_benefit;
-    renderComparisonTable(
-      "comparison_table_container",
-      tableData || [],
-      currentBaseYear
-    );
+    if (stateData.nonmonetary) {
+      const nonmonetaryData = {
+        years: yearsRange,
+        series: stateData.nonmonetary.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = stateData.nonmonetary.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values };
+        }),
+      };
+      renderNonmonetaryChart("nonmonetary_chart_container", nonmonetaryData);
+    }
   }
 }
 
 // ------------------- Init -------------------
 document.addEventListener("DOMContentLoaded", () => {
+  // Assume ALLDATA has structure ALLDATA[stateCode][year]
   const years = Object.keys(ALLDATA["US"])
     .map((y) => parseInt(y))
     .sort((a, b) => b - a);
@@ -562,7 +503,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderBaseYearSelector("base_year_selector", years, defaultYear);
   renderCategorySelector("category_selector");
+
+  // Pass in state abbreviations from R script (like ["US","VA","CA",...])
   renderStateSelector("state_selector", STATE_CODES, "US");
+
   setupScopeToggle();
 
   updateDashboard(defaultYear, currentCategory, currentState);
@@ -583,6 +527,32 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+function switchView(view) {
+  if (!currentBaseYear || !currentState) return;
+
+  if (view === "plots") {
+    document.getElementById("plots-view").style.display = "block";
+    document.getElementById("table-view").style.display = "none";
+    updateDashboard(currentBaseYear, currentCategory, currentState);
+  } else {
+    document.getElementById("plots-view").style.display = "none";
+    document.getElementById("table-view").style.display = "block";
+
+    const stateData = ALLDATA[currentState][currentBaseYear];
+
+    const tableData =
+      currentCategory === "program"
+        ? stateData.table_program
+        : stateData.table_benefit;
+
+    renderComparisonTable(
+      "comparison_table_container",
+      tableData || [],
+      currentBaseYear
+    );
+  }
+}
+
 // ------------------- Export PDF -------------------
 async function exportToPDF() {
   const { jsPDF } = window.jspdf;
@@ -592,21 +562,25 @@ async function exportToPDF() {
 
   console.log("Export button clicked");
 
+  // ---- Cover Page ----
   const titleMain =
     document.querySelector("#reportTitle .title-main")?.innerText ||
-    "UI Overpayments Report";
+    "UI Payment Integrity Report";
   const titleSub =
     document.querySelector("#reportTitle .title-sub")?.innerText || "";
 
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(18);
   pdf.text(titleMain, pageWidth / 2, pageHeight / 2 - 10, { align: "center" });
+
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(14);
   pdf.text(titleSub, pageWidth / 2, pageHeight / 2 + 5, { align: "center" });
 
+  // Add a new page for charts
   pdf.addPage();
 
+  // ---- Hidden container for charts ----
   const exportDiv = document.createElement("div");
   exportDiv.style.position = "absolute";
   exportDiv.style.left = "-9999px";
@@ -615,10 +589,160 @@ async function exportToPDF() {
   const stateData = ALLDATA[currentState][currentBaseYear];
   let yOffset = 30;
 
-  // (Rendering program, benefit, overview sections into PDF ... unchanged from your current code)
+  //  PROGRAM INTEGRITY (Pie + Bump bundled)
 
+  if (stateData.pie || stateData.bump) {
+    // Print Program Integrity header once
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.setTextColor(10, 34, 57);
+    pdf.text("Program Integrity Measures", pageWidth / 2, yOffset, {
+      align: "center",
+    });
+    pdf.setTextColor(0, 0, 0);
+    yOffset += 12;
+
+    // --- PIE CHART ---
+    if (stateData.pie) {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text("Root Causes of Overpayments", pageWidth / 2, yOffset, {
+        align: "center",
+      });
+      yOffset += 6;
+
+      yOffset = await renderChartToPDF(
+        pdf,
+        exportDiv,
+        "pie_export",
+        renderPieChart,
+        Object.entries(stateData.pie).map(([n, v]) => ({ name: n, value: v })),
+        pageWidth,
+        pageHeight,
+        yOffset,
+        600,
+        350
+      );
+    }
+
+    // --- BUMP CHART ---
+    if (stateData.bump) {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text("Top 5 Causes of Overpayment", pageWidth / 2, yOffset, {
+        align: "center",
+      });
+      yOffset += 6;
+
+      yOffset = await renderChartToPDF(
+        pdf,
+        exportDiv,
+        "bump_export",
+        renderBumpChart,
+        stateData.bump,
+        pageWidth,
+        pageHeight,
+        yOffset,
+        900,
+        450
+      );
+    }
+  }
+
+  // PROGRAM INTEGRITY (Improper/Fraud after Pie+Bump)
+
+  if (stateData.improperfraud) {
+    if (yOffset > pageHeight - 150) {
+      pdf.addPage();
+      yOffset = 30;
+    }
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.text("Improper Payment & Fraud Rates", pageWidth / 2, yOffset, {
+      align: "center",
+    });
+    yOffset += 6;
+
+    yOffset = await renderChartToPDF(
+      pdf,
+      exportDiv,
+      "improperfraud_export",
+      renderImproperFraudChart,
+      stateData.improperfraud,
+      pageWidth,
+      pageHeight,
+      yOffset,
+      900,
+      450
+    );
+  }
+
+  //  BENEFIT MEASURES
+
+  if (stateData.timeliness || stateData.nonmonetary) {
+    pdf.addPage();
+    yOffset = 30;
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.setTextColor(10, 34, 57);
+    pdf.text("Benefit Measures", pageWidth / 2, yOffset, { align: "center" });
+    pdf.setTextColor(0, 0, 0);
+    yOffset += 12;
+
+    if (stateData.timeliness) {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text("First Payment Timeliness (FPT)", pageWidth / 2, yOffset, {
+        align: "center",
+      });
+      yOffset += 6;
+
+      yOffset = await renderChartToPDF(
+        pdf,
+        exportDiv,
+        "timeliness_export",
+        renderTimelinessChart,
+        stateData.timeliness,
+        pageWidth,
+        pageHeight,
+        yOffset,
+        900,
+        450
+      );
+    }
+
+    if (stateData.nonmonetary) {
+      if (yOffset > pageHeight - 150) {
+        pdf.addPage();
+        yOffset = 30;
+      }
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text("Nonmonetary Determination", pageWidth / 2, yOffset, {
+        align: "center",
+      });
+      yOffset += 6;
+
+      yOffset = await renderChartToPDF(
+        pdf,
+        exportDiv,
+        "nonmonetary_export",
+        renderNonmonetaryChart,
+        stateData.nonmonetary,
+        pageWidth,
+        pageHeight,
+        yOffset,
+        900,
+        450
+      );
+    }
+  }
+
+  // ---- Cleanup ----
   document.body.removeChild(exportDiv);
 
+  // ---- Table export ----
   const tableEl = document.querySelector("#comparison_table_container table");
   if (tableEl) {
     pdf.addPage();
@@ -630,7 +754,7 @@ async function exportToPDF() {
     });
   }
 
-  pdf.save("UI_Overpayments_Report.pdf");
+  pdf.save("UI Payment Integrity Report.pdf");
 }
 
 // ------------------- Helper -------------------

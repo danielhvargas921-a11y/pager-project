@@ -2,28 +2,13 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>UI Integrity Report</title>
+    <title>UI Overpayments Report</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-
-    <!-- jsPDF core -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- jsPDF Autotable for vector tables -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
-    <!-- svg2pdf.js for embedding  charts -->
-    <script src="https://unpkg.com/svg2pdf.js@2.0.0/dist/svg2pdf.umd.min.js"></script>
-    <script>
-      // global settings for svg
-      window.svg2pdf =
-        window.svg2pdf ||
-        (window["svg2pdf"] && window["svg2pdf"].default) ||
-        window["svg2pdf"];
-    </script>
-
     <style>
 /* Sidebar styling */
 #sidebar {
@@ -47,16 +32,11 @@
   min-height: 100vh;
 }
 
-/* Unified report container (single card) */
+/* Container to center header + section together */
 #report-container {
-  margin: 0 auto 20px auto;
+  margin: 0 auto;
   width: 95%;
   max-width: 1100px;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  background: #fff;
-  overflow: hidden; /* ensures header + section align */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 @media (min-width: 1600px) {
@@ -65,91 +45,20 @@
   }
 }
 
-/* Page header (navy banner inside card) */
-#page-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #0a2239;
-  color: #fff;
-  padding: 15px 20px;
-  border-bottom: 1px solid #dee2e6;
-  border-radius: 0;
-}
-
-/* Export button (left side) */
-#exportPDFBtn {
-  position: absolute;
-  left: 20px;
-  background: #f8f9fa;
-  color: #0a2239;
-  font-weight: 600;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  padding: 6px 12px;
-  transition: all 0.2s;
-}
-#exportPDFBtn:hover {
-  background: #e9ecef;
-}
-
-/* Report title (always perfectly centered) */
-#reportTitle {
-  text-align: center;
-  line-height: 1.3;
-}
-#reportTitle .title-main {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #fff;
-}
-#reportTitle .title-sub {
-  font-size: 1rem;
-  font-weight: 400;
-  color: #ddd;
-  margin-top: 4px;
-}
-
-/* Toggle pill (right side) */
-#page-header .toggle-pill {
-  position: absolute;
-  right: 20px;
-  display: inline-flex;
-  border-radius: 30px;
-  background: #e9ecef;
-  padding: 4px;
-  gap: 4px;
-}
-#page-header .toggle-option {
-  border: none;
-  background: transparent;
-  padding: 6px 20px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-  color: #495057;
-}
-#page-header .toggle-option:hover {
-  background: #dee2e6;
-}
-#page-header .toggle-option.active {
-  background: #0a2239;
-  color: #fff;
-}
-
-/* Section (report body inside card) */
+/* Section styling (report body) */
 .section {
-  padding: 20px 50px;
-  border: none;
-  border-radius: 0;
+  margin: 0 auto 10px auto;
+  width: 100%;
   background: #fff;
-  margin: 0;
+  border: 1px solid #dee2e6;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 40px 50px;
 }
 
 @media (max-width: 992px) {
   .section {
+    width: 100%;
     padding: 20px;
   }
 }
@@ -201,7 +110,7 @@
   text-align: center;
 }
 
-/* Pill toggle styling (sidebar) */
+/* Pill toggle styling */
 .toggle-pill {
   display: inline-flex;
   border-radius: 50px;
@@ -229,7 +138,7 @@
   color: #fff;
 }
 
-/* table animations (removed for now) */
+/* Animations */
 .fade-in {
   opacity: 0;
   transform: translateY(10px);
@@ -311,148 +220,114 @@
   pointer-events: none;
 }
 
-/*  Export / PDF Styling */
-
-body.exporting #sidebar {
-  display: none !important;
-}
-
-body.exporting #main-content {
-  margin-left: 0 !important;
-  padding: 0 !important;
-  background: #fff !important;
-}
-
-body.exporting #report-container {
-  box-shadow: none !important;
-  border: none !important;
-  margin: 0 auto !important;
-  padding: 0 !important;
-  background: #fff !important;
-}
-
-/* Keep header background + title */
-body.exporting #page-header {
-  background-color: #0a2239 !important;
-  color: #fff !important;
-}
-
-/* Hide only buttons in export */
-body.exporting #exportPDFBtn,
-body.exporting #page-header .toggle-pill {
-  display: none !important;
-}
-
-.chart-block h3 {
+/* Report title styles */
+#reportTitle {
   text-align: center;
-  margin-bottom: 15px;
-  font-weight: 600;
-  color: #0a2239;
+  margin: 0;
+  line-height: 1.3;
 }
 
-/* footer style labels */
-
-#sidebar-footer {
-  font-size: 15px;
-  color: #666;
-  text-align: center;
-  margin-top: 20px;
-  font-style: italic;
+#reportTitle .title-main {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
 }
 
-/* Overview layout */
-.overview-row {
-  display: flex;
-  gap: 20px;
+#reportTitle .title-sub {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #ddd;
+  margin-top: 4px;
 }
 
-.overview-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* Chart subtitles */
-.chart-subtitle {
-  font-size: 0.9rem;
-  color: #555;
-  margin-top: -5px;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-/* Placeholder box */
-.placeholder-box {
-  background: #f5f5f5;
-  border: 2px dashed #ccc;
-  height: 300px;
-}
-
-/* Validation table placeholder */
-.table-placeholder {
-  border: 2px solid #ccc;
+/* Page header (navy banner aligned with section) */
+#page-header {
+  width: 100%;
+  background-color: #0a2239;
+  color: #fff;
   padding: 20px;
-  text-align: center;
-  font-style: italic;
-  color: #777;
+  border-radius: 8px 8px 0 0;
+  position: relative;
+}
+
+/* Position toggle pill inside header */
+#page-header .toggle-pill {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 </style>
+    <style>
+      /* Page-level header (full-width navy bar) */
+      #page-header {
+        width: 100%;
+        background-color: #0a2239;
+        color: #fff;
+        padding: 20px;
+        border-bottom: 4px solid #13294b; /* accent line */
+        margin: 0;
+      }
+
+      #page-header h3 {
+        color: #fff;
+        font-weight: 600;
+      }
+
+      #page-header .toggle-pill {
+        background: #13294b;
+      }
+
+      #page-header .toggle-option {
+        color: #fff;
+      }
+
+      #page-header .toggle-option.active {
+        background: #fff;
+        color: #0a2239;
+      }
+    </style>
   </head>
   <body class="bg-light">
     <!-- Sidebar -->
-    <div
-      id="sidebar"
-      class="bg-dark text-white p-3 d-flex flex-column"
-      style="height: 100vh"
-    >
+    <div id="sidebar" class="bg-dark text-white p-3">
       <h4 class="mb-3">U.S. Department of Labor</h4>
 
-      <!-- Main content area -->
-      <div class="flex-grow-1">
-        <!-- Mode toggle -->
-        <div class="sidebar-mode-toggle mt-3">
-          <button id="btnNational" class="sidebar-toggle-btn active">
-            National
-          </button>
-          <button id="btnState" class="sidebar-toggle-btn">State</button>
-        </div>
-
-        <div class="mt-3">
-          Last updated:
-          2025-09-22
-        </div>
-
-        <!-- Base Year -->
-        <div class="mt-3">
-          <label for="baseYearDropdown" class="form-label fw-bold"
-            >Select Base Year:</label
-          >
-          <div id="base_year_selector"></div>
-        </div>
-
-        <!-- Category -->
-        <div class="mt-3">
-          <label for="categoryDropdown" class="form-label fw-bold"
-            >Select Category:</label
-          >
-          <div id="category_selector"></div>
-        </div>
-
-        <!-- State selector -->
-        <div class="mt-3" id="state_selector">
-          <label for="stateDropdown" class="form-label fw-bold"
-            >Select State:</label
-          >
-          <select
-            id="stateDropdown"
-            class="form-select form-select-sm"
-          ></select>
-        </div>
+      <!-- Mode toggle -->
+      <div class="sidebar-mode-toggle mt-3">
+        <button id="btnNational" class="sidebar-toggle-btn active">
+          National
+        </button>
+        <button id="btnState" class="sidebar-toggle-btn">State</button>
       </div>
 
-      <div id="sidebar-footer">
-        Developed by Office of Unemployment Insurance (OUI)
+      <div class="mt-3">
+        Last updated:
+        2025-09-20
+      </div>
+
+      <!-- Base Year -->
+      <div class="mt-3">
+        <label for="baseYearDropdown" class="form-label fw-bold"
+          >Select Base Year:</label
+        >
+        <div id="base_year_selector"></div>
+      </div>
+
+      <!-- Category -->
+      <div class="mt-3">
+        <label for="categoryDropdown" class="form-label fw-bold"
+          >Select Category:</label
+        >
+        <div id="category_selector"></div>
+      </div>
+
+      <!-- State selector -->
+      <div class="mt-3" id="state_selector">
+        <label for="stateDropdown" class="form-label fw-bold"
+          >Select State:</label
+        >
+        <select id="stateDropdown" class="form-select form-select-sm"></select>
       </div>
     </div>
 
@@ -460,22 +335,11 @@ body.exporting #page-header .toggle-pill {
     <div id="main-content" class="p-4">
       <div id="report-container">
         <!-- Header -->
-        <div
-          id="page-header"
-          class="d-flex justify-content-between align-items-center"
-        >
-          <!-- Left: Export PDF button -->
-          <button id="exportPDFBtn" class="btn btn-sm btn-light">
-            Export PDF
-          </button>
-
-          <!-- Center: Report title -->
-          <div id="reportTitle" class="text-center flex-grow-1">
+        <div id="page-header">
+          <div id="reportTitle" class="text-center">
             <div class="title-main">UI Overpayments Report â€” 2025</div>
             <div class="title-sub">(National, Program Integrity Measures)</div>
           </div>
-
-          <!-- Right: Plots/Table toggle -->
           <div class="toggle-pill" id="viewToggle">
             <button class="toggle-option active" data-view="plots">
               Plots
@@ -487,80 +351,19 @@ body.exporting #page-header .toggle-pill {
         <!-- Section wrapper -->
         <div class="section">
           <!-- Injected sections (from R) -->
-          <div class="metric-section" id="section_dashboard">
-  <!-- Plots view -->
-  <div id="plots-view">
-
-    <!-- ================= OVERVIEW ================= -->
-    <div class="chart-block" data-category="overview">
-      <h4>First Payment Timeliness</h4>
-      <p class="chart-subtitle">Percent of payments made within 14 and 21 days</p>
-      <div id="overview_timeliness" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>Nonmonetary Determinations</h4>
-      <p class="chart-subtitle">Percent of determinations meeting ALP (80%)</p>
-      <div id="overview_nonmonetary" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>Improper Payment Rate</h4>
-      <p class="chart-subtitle">Percent of overpayments classified as improper</p>
-      <div id="overview_improper" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>[Placeholder Slot]</h4>
-      <p class="chart-subtitle">Space reserved for future chart</p>
-      <div class="chart-container placeholder-box"></div>
-    </div>
-
-    <div class="chart-block" data-category="overview">
-      <h4>[Placeholder Slot]</h4>
-      <p class="chart-subtitle">Space reserved for future chart</p>
-      <div class="chart-container placeholder-box"></div>
-    </div>
-
-    <!-- Validation Table -->
-    <div class="chart-block" data-category="overview">
-      <h4>Data Validation Table</h4>
-      <div class="table-placeholder">[Validation Table Placeholder]</div>
-    </div>
-
-    <!-- ================= PROGRAM ================= -->
-    <div class="chart-block" data-category="program">
-      <h3>Root Causes of Overpayments</h3>
-      <div id="pie_chart_container" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="program">
-      <h3>Top 5 Causes of Overpayment</h3>
-      <div id="bump_chart_container" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="program">
-      <h3>Improper Payment & Fraud Rates</h3>
-      <div id="improperfraud_chart_container" class="chart-container"></div>
-    </div>
-
-    <!-- ================= BENEFIT ================= -->
-    <div class="chart-block" data-category="benefit">
-      <h3>First Payment Timeliness (FPT)</h3>
-      <div id="timeliness_chart_container" class="chart-container"></div>
-    </div>
-
-    <div class="chart-block" data-category="benefit">
-      <h3>Nonmonetary Determinations</h3>
-      <div id="nonmonetary_chart_container" class="chart-container"></div>
-    </div>
-
-  </div>
-
-  <!-- Table view -->
-  <div id="table-view" style="display:none">
-    <div id="comparison_table_container"></div>
-  </div>
+          <div class="section bg-white shadow-sm rounded metric-section" id="section_dashboard">
+<!-- Plots view -->
+<div id="plots-view">
+<div id="pie_chart_container" class="chart-container"></div>
+<div id="bump_chart_container" class="chart-container"></div>
+<div id="improperfraud_chart_container" class="chart-container"></div>
+<div id="timeliness_chart_container" class="chart-container"></div>
+<div id="nonmonetary_chart_container" class="chart-container"></div>
+</div>
+<!-- Table view -->
+<div id="table-view" style="display:none">
+<div id="comparison_table_container"></div>
+</div>
 </div>
         </div>
       </div>
@@ -1436,7 +1239,7 @@ var STATE_CODES = ["AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","
     <script>
 let charts = {};
 let currentBaseYear = null;
-let currentCategory = "overview"; // default category
+let currentCategory = "program";
 let currentState = "US";
 
 const metricColors = {
@@ -1448,49 +1251,33 @@ const metricColors = {
   "Base Period Wages": "#ffd23b",
   "Other Eligibility Issues": "#c15fcf",
   "All Other Causes": "#ff7b93",
-  "Improper Payment Rate": "#1f77b4",
-  "Fraud Rate": "#ff7f0e",
+  "Improper Payment Rate": "#1f77b4", // blue
+  "Fraud Rate": "#ff7f0e", // orange
   "First Payment Timeliness (14 days)": "#2a9d8f",
   "First Payment Timeliness (21 days)": "#e76f51",
-  "Nonmonetary Determination": "#9467bd",
+  "Nonmonetary Determination": "#9467bd", // purple
 };
 
 // ------------------- Chart Renderers -------------------
-function renderPieChart(containerId, pieData, exportMode = false) {
+function renderPieChart(containerId, pieData) {
   let chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  let chart = echarts.init(chartDom, null, { renderer: "svg" });
+  let chart = echarts.init(chartDom);
 
   let option = {
-    animation: !exportMode,
+    title: { text: "Root Causes of Overpayments", left: "center" },
     tooltip: { trigger: "item", formatter: "{b}: {c}%" },
     series: [
       {
         type: "pie",
-        radius: exportMode ? ["30%", "65%"] : ["35%", "75%"],
+        radius: ["35%", "75%"],
         center: ["50%", "55%"],
         data: pieData.map((d) => ({
           ...d,
           itemStyle: { color: metricColors[d.name] || "#999" },
         })),
-        label: {
-          show: true,
-          formatter: "{b}: {c}%",
-          fontSize: exportMode ? 10 : 12,
-          color: "#000",
-          position: "outside",
-          overflow: "break",
-          alignTo: "labelLine",
-          distanceToLabelLine: 2,
-        },
-        labelLine: {
-          show: true,
-          length: exportMode ? 20 : 15,
-          length2: exportMode ? 15 : 10,
-          lineStyle: { color: "#666" },
-        },
-        avoidLabelOverlap: false,
+        label: { formatter: "{b}: {c}%" },
       },
     ],
   };
@@ -1499,11 +1286,11 @@ function renderPieChart(containerId, pieData, exportMode = false) {
   charts[containerId] = chart;
 }
 
-function renderBumpChart(containerId, bumpData, exportMode = false) {
+function renderBumpChart(containerId, bumpData) {
   let chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  let chart = echarts.init(chartDom, null, { renderer: "svg" });
+  let chart = echarts.init(chartDom);
 
   const years = bumpData.years;
   const seriesList = bumpData.series.map((s) => ({
@@ -1518,7 +1305,7 @@ function renderBumpChart(containerId, bumpData, exportMode = false) {
   }));
 
   let option = {
-    animation: !exportMode,
+    title: { text: "Top 5 Causes of Overpayment", left: "center" },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
     grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
@@ -1535,16 +1322,12 @@ function renderBumpChart(containerId, bumpData, exportMode = false) {
   charts[containerId] = chart;
 }
 
-function renderTimelinessChart(containerId, data, exportMode = false) {
+function renderTimelinessChart(containerId, data) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
+  if (charts[containerId]) echarts.dispose(chartDom);
+  const chart = echarts.init(chartDom);
 
-  if (charts[containerId]) {
-    echarts.dispose(chartDom);
-    delete charts[containerId];
-  }
-
-  const chart = echarts.init(chartDom, null, { renderer: "svg" });
   const years = data.years;
   const alpThreshold = 87;
 
@@ -1557,12 +1340,14 @@ function renderTimelinessChart(containerId, data, exportMode = false) {
     lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
     data: s.values.map((v) => ({
       value: v,
-      itemStyle: { color: v >= alpThreshold ? "#2a9d8f" : "#e63946" },
+      itemStyle: {
+        color: v >= alpThreshold ? "#2a9d8f" : "#e63946", // green if above line, red if below
+      },
     })),
   }));
 
   const option = {
-    animation: !exportMode,
+    title: { text: "First Payment Timeliness (FPT)", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
     grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
@@ -1588,11 +1373,11 @@ function renderTimelinessChart(containerId, data, exportMode = false) {
   charts[containerId] = chart;
 }
 
-function renderNonmonetaryChart(containerId, data, exportMode = false) {
+function renderNonmonetaryChart(containerId, data) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  const chart = echarts.init(chartDom, null, { renderer: "svg" });
+  const chart = echarts.init(chartDom);
 
   const years = data.years;
   const alpThreshold = 80;
@@ -1606,12 +1391,14 @@ function renderNonmonetaryChart(containerId, data, exportMode = false) {
     lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
     data: s.values.map((v) => ({
       value: v,
-      itemStyle: { color: v >= alpThreshold ? "#2a9d8f" : "#e63946" },
+      itemStyle: {
+        color: v >= alpThreshold ? "#2a9d8f" : "#e63946", // green if above line, red if below
+      },
     })),
   }));
 
   const option = {
-    animation: !exportMode,
+    title: { text: "Nonmonetary Determination", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
     grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
@@ -1637,15 +1424,16 @@ function renderNonmonetaryChart(containerId, data, exportMode = false) {
   charts[containerId] = chart;
 }
 
-function renderImproperFraudChart(containerId, data, exportMode = false) {
+function renderImproperFraudChart(containerId, data) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
   if (charts[containerId]) echarts.dispose(chartDom);
-  const chart = echarts.init(chartDom, null, { renderer: "svg" });
+  const chart = echarts.init(chartDom);
 
   const years = data.years;
   const alpThreshold = 10;
 
+  // Series with per-point coloring
   const seriesList = data.series.map((s) => ({
     name: s.name,
     type: "line",
@@ -1655,12 +1443,14 @@ function renderImproperFraudChart(containerId, data, exportMode = false) {
     lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
     data: s.values.map((v) => ({
       value: v,
-      itemStyle: { color: v > alpThreshold ? "#e63946" : "#2a9d8f" },
+      itemStyle: {
+        color: v > alpThreshold ? "#e63946" : "#2a9d8f", // red fail / green pass
+      },
     })),
   }));
 
   const option = {
-    animation: !exportMode,
+    title: { text: "Improper Payment & Fraud Rates", left: "center", top: 0 },
     tooltip: { trigger: "axis" },
     legend: { bottom: 0 },
     grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
@@ -1671,6 +1461,7 @@ function renderImproperFraudChart(containerId, data, exportMode = false) {
       axisLabel: { formatter: "{value}%" },
     },
     series: [
+      // ALP dashed reference line
       {
         name: "ALP (10%)",
         type: "line",
@@ -1693,7 +1484,8 @@ function renderComparisonTable(containerId, tableData, baseYear) {
   tableData.sort((a, b) => b.Current - a.Current);
 
   const rows = tableData
-    .map((row) => {
+    .map((row, idx) => {
+      // Ensure safe text for each field
       const currTxt =
         row.Current != null && !isNaN(row.Current) ? `${row.Current}%` : "NA";
       const prevTxt =
@@ -1706,7 +1498,7 @@ function renderComparisonTable(containerId, tableData, baseYear) {
           : "NA";
 
       return `
-<tr>
+<tr class="fade-in" style="animation-delay:${idx * 0.3}s">
   <td>${row.Metric}</td>
   <td>${currTxt}</td>
   <td>${prevTxt}</td>
@@ -1761,9 +1553,7 @@ function renderCategorySelector(containerId) {
 
   const select = document.createElement("select");
   select.className = "form-select form-select-sm";
-
   [
-    { value: "overview", label: "Overview" },
     { value: "program", label: "Program Integrity Measures" },
     { value: "benefit", label: "Benefit Measures" },
   ].forEach((optDef) => {
@@ -1788,8 +1578,8 @@ function renderStateSelector(containerId, stateCodes, defaultState = "AK") {
   if (!container) return;
 
   const select = document.getElementById("stateDropdown");
-  select.innerHTML = "";
 
+  select.innerHTML = "";
   stateCodes.forEach((code) => {
     const opt = document.createElement("option");
     opt.value = code;
@@ -1842,155 +1632,130 @@ function updateDashboard(baseYear, category, stateCode = "US") {
 
   const stateData = ALLDATA[stateCode][baseYear];
 
-  // --- Title
+  // --- Update page title dynamically with two lines ---
   const catLabel =
-    category === "program"
-      ? "Program Integrity Measures"
-      : category === "benefit"
-      ? "Benefit Measures"
-      : "Overview";
+    category === "program" ? "Program Integrity Measures" : "Benefit Measures";
+
   const stateLabel = stateCode === "US" ? "National" : stateCode;
 
   document.getElementById("reportTitle").innerHTML = `
-    <div class="title-main">UI Overpayments Report &mdash; ${baseYear}</div>
-    <div class="title-sub">(${stateLabel}, ${catLabel})</div>
-  `;
+  <div class="title-main">UI Overpayments Report &mdash; ${baseYear}</div>
+  <div class="title-sub">(${stateLabel}, ${catLabel})</div>
+`;
 
-  // --- Show correct section
-  document
-    .querySelectorAll(".metric-section")
-    .forEach((s) => (s.style.display = "none"));
-  document.getElementById("section_dashboard").style.display = "block";
+  // --- Pie data ---
+  const pieData = Object.entries(stateData.pie || {}).map(([name, value]) => ({
+    name,
+    value,
+  }));
 
-  // --- Chart visibility
-  document
-    .querySelectorAll(".chart-block")
-    .forEach((b) => (b.style.display = "none"));
-  document
-    .querySelectorAll(`.chart-block[data-category='${category}']`)
-    .forEach((b) => (b.style.display = "block"));
+  // Update table depending on category
+  if (category === "program") {
+    renderComparisonTable(
+      "comparison_table_container",
+      stateData.table_program || [],
+      baseYear
+    );
+  } else if (category === "benefit") {
+    renderComparisonTable(
+      "comparison_table_container",
+      stateData.table_benefit || [],
+      baseYear
+    );
+  }
 
-  // --- Years range
+  // Build the 6-year window (baseYear - 5 through baseYear)
   const yearsRange = [];
   for (let y = baseYear - 5; y <= baseYear; y++) yearsRange.push(y);
 
-  // --- Render charts depending on category
-  if (category === "program" && stateData.pie) {
-    const pieData = Object.entries(stateData.pie || {}).map(
-      ([name, value]) => ({ name, value })
-    );
+  // Hide all plots first
+  [
+    "pie_chart_container",
+    "bump_chart_container",
+    "improperfraud_chart_container",
+    "timeliness_chart_container",
+    "nonmonetary_chart_container",
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  if (category === "program") {
+    // Show program-related charts
+    document.getElementById("pie_chart_container").style.display = "block";
+    document.getElementById("bump_chart_container").style.display = "block";
+    document.getElementById("improperfraud_chart_container").style.display =
+      "block";
+
     renderPieChart("pie_chart_container", pieData);
-  }
 
-  if (category === "program" && stateData.bump) {
-    const bumpData = {
-      years: yearsRange,
-      series: stateData.bump.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.bump.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderBumpChart("bump_chart_container", bumpData);
-  }
+    if (stateData.bump) {
+      const bumpData = {
+        years: yearsRange,
+        series: stateData.bump.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = stateData.bump.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values };
+        }),
+      };
+      renderBumpChart("bump_chart_container", bumpData);
+    }
 
-  if (
-    (category === "program" || category === "overview") &&
-    stateData.improperfraud
-  ) {
-    const ifData = {
-      years: yearsRange,
-      series: stateData.improperfraud.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.improperfraud.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderImproperFraudChart(
-      category === "overview"
-        ? "overview_improper"
-        : "improperfraud_chart_container",
-      ifData
-    );
-  }
+    if (stateData.improperfraud) {
+      const ifData = {
+        years: yearsRange,
+        series: stateData.improperfraud.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = stateData.improperfraud.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values };
+        }),
+      };
+      renderImproperFraudChart("improperfraud_chart_container", ifData);
+    }
+  } else if (category === "benefit") {
+    // Show benefit-related charts
+    document.getElementById("timeliness_chart_container").style.display =
+      "block";
+    document.getElementById("nonmonetary_chart_container").style.display =
+      "block";
 
-  if (
-    (category === "benefit" || category === "overview") &&
-    stateData.timeliness
-  ) {
-    const timelinessData = {
-      years: yearsRange,
-      series: stateData.timeliness.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.timeliness.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderTimelinessChart(
-      category === "overview"
-        ? "overview_timeliness"
-        : "timeliness_chart_container",
-      timelinessData
-    );
-  }
+    if (stateData.timeliness) {
+      const timelinessData = {
+        years: yearsRange,
+        series: stateData.timeliness.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = stateData.timeliness.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values };
+        }),
+      };
+      renderTimelinessChart("timeliness_chart_container", timelinessData);
+    }
 
-  if (
-    (category === "benefit" || category === "overview") &&
-    stateData.nonmonetary
-  ) {
-    const nonmonetaryData = {
-      years: yearsRange,
-      series: stateData.nonmonetary.series.map((s) => {
-        const values = yearsRange.map((yr) => {
-          const idx = stateData.nonmonetary.years.indexOf(yr);
-          return idx !== -1 ? s.values[idx] : null;
-        });
-        return { ...s, values };
-      }),
-    };
-    renderNonmonetaryChart(
-      category === "overview"
-        ? "overview_nonmonetary"
-        : "nonmonetary_chart_container",
-      nonmonetaryData
-    );
-  }
-}
-
-// ------------------- Switch View -------------------
-function switchView(view) {
-  if (!currentBaseYear || !currentState) return;
-
-  if (view === "plots") {
-    document.getElementById("plots-view").style.display = "block";
-    document.getElementById("table-view").style.display = "none";
-    updateDashboard(currentBaseYear, currentCategory, currentState);
-    setTimeout(() => Object.values(charts).forEach((c) => c.resize()), 50);
-  } else {
-    document.getElementById("plots-view").style.display = "none";
-    document.getElementById("table-view").style.display = "block";
-
-    const stateData = ALLDATA[currentState][currentBaseYear];
-    const tableData =
-      currentCategory === "program"
-        ? stateData.table_program
-        : stateData.table_benefit;
-    renderComparisonTable(
-      "comparison_table_container",
-      tableData || [],
-      currentBaseYear
-    );
+    if (stateData.nonmonetary) {
+      const nonmonetaryData = {
+        years: yearsRange,
+        series: stateData.nonmonetary.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = stateData.nonmonetary.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values };
+        }),
+      };
+      renderNonmonetaryChart("nonmonetary_chart_container", nonmonetaryData);
+    }
   }
 }
 
 // ------------------- Init -------------------
 document.addEventListener("DOMContentLoaded", () => {
+  // Assume ALLDATA has structure ALLDATA[stateCode][year]
   const years = Object.keys(ALLDATA["US"])
     .map((y) => parseInt(y))
     .sort((a, b) => b - a);
@@ -1998,7 +1763,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderBaseYearSelector("base_year_selector", years, defaultYear);
   renderCategorySelector("category_selector");
+
+  // Pass in state abbreviations from R script (like ["US","VA","CA",...])
   renderStateSelector("state_selector", STATE_CODES, "US");
+
   setupScopeToggle();
 
   updateDashboard(defaultYear, currentCategory, currentState);
@@ -2019,113 +1787,31 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ------------------- Export PDF -------------------
-async function exportToPDF() {
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF("p", "mm", "a4");
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+function switchView(view) {
+  if (!currentBaseYear || !currentState) return;
 
-  console.log("Export button clicked");
+  if (view === "plots") {
+    document.getElementById("plots-view").style.display = "block";
+    document.getElementById("table-view").style.display = "none";
+    updateDashboard(currentBaseYear, currentCategory, currentState);
+  } else {
+    document.getElementById("plots-view").style.display = "none";
+    document.getElementById("table-view").style.display = "block";
 
-  const titleMain =
-    document.querySelector("#reportTitle .title-main")?.innerText ||
-    "UI Overpayments Report";
-  const titleSub =
-    document.querySelector("#reportTitle .title-sub")?.innerText || "";
+    const stateData = ALLDATA[currentState][currentBaseYear];
 
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(18);
-  pdf.text(titleMain, pageWidth / 2, pageHeight / 2 - 10, { align: "center" });
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(14);
-  pdf.text(titleSub, pageWidth / 2, pageHeight / 2 + 5, { align: "center" });
+    const tableData =
+      currentCategory === "program"
+        ? stateData.table_program
+        : stateData.table_benefit;
 
-  pdf.addPage();
-
-  const exportDiv = document.createElement("div");
-  exportDiv.style.position = "absolute";
-  exportDiv.style.left = "-9999px";
-  document.body.appendChild(exportDiv);
-
-  const stateData = ALLDATA[currentState][currentBaseYear];
-  let yOffset = 30;
-
-  // (Rendering program, benefit, overview sections into PDF ... unchanged from your current code)
-
-  document.body.removeChild(exportDiv);
-
-  const tableEl = document.querySelector("#comparison_table_container table");
-  if (tableEl) {
-    pdf.addPage();
-    pdf.autoTable({
-      html: tableEl,
-      theme: "grid",
-      headStyles: { fillColor: [10, 34, 57] },
-      margin: { top: 20 },
-    });
+    renderComparisonTable(
+      "comparison_table_container",
+      tableData || [],
+      currentBaseYear
+    );
   }
-
-  pdf.save("UI_Overpayments_Report.pdf");
 }
-
-// ------------------- Helper -------------------
-async function renderChartToPDF(
-  pdf,
-  exportDiv,
-  containerId,
-  renderer,
-  data,
-  pageWidth,
-  pageHeight,
-  yOffset,
-  width,
-  height
-) {
-  const container = document.createElement("div");
-  container.style.width = `${width}px`;
-  container.style.height = `${height}px`;
-  container.id = containerId;
-  exportDiv.appendChild(container);
-
-  renderer(container.id, data, true);
-
-  await new Promise((resolve) => setTimeout(resolve, 300));
-  const svgEl = container.querySelector("svg");
-  if (!svgEl) return yOffset;
-
-  svgEl.removeAttribute("style");
-  const w = svgEl.getAttribute("width") || width;
-  const h = svgEl.getAttribute("height") || height;
-  svgEl.setAttribute("viewBox", `0 0 ${w} ${h}`);
-
-  const aspectRatio = w / h;
-  let drawW = pageWidth - 40;
-  let drawH = drawW / aspectRatio;
-
-  if (yOffset + drawH > pageHeight - 20) {
-    pdf.addPage();
-    yOffset = 30;
-  }
-
-  await window.svg2pdf.svg2pdf(svgEl, pdf, {
-    x: (pageWidth - drawW) / 2,
-    y: yOffset,
-    width: drawW,
-    height: drawH,
-  });
-
-  return yOffset + drawH + 20;
-}
-
-// ------------------- Hook Export Button -------------------
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("exportPDFBtn");
-  if (btn) {
-    console.log("Attaching click handler to Export PDF button");
-    btn.addEventListener("click", exportToPDF);
-  }
-});
 </script>
   </body>
 </html>
