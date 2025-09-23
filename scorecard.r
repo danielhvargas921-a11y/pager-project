@@ -81,7 +81,7 @@ annual_multi_year <- function(df, base_year, range, metrics, state = "US", n_yea
 # ---------------- Build data ----------------
 all_years <- c(2024, 2025)
 all_states <- unique(df_raw$State)
-# all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
+all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
 
 all_data <- list()
 
@@ -197,26 +197,27 @@ for (st in all_states) {
       }
     }
 
-    # --- test line data ---
+    # --- Quality (Separation) ---
 
-    newmetric_data <- NULL
+    quality_sep_data <- NULL
 
-    nm_vals <- annual_last_month(df_raw, y, year_range, "New Metric", state = st)
-    if (!is.null(nm_vals)) {
-      multi_nm <- annual_multi_year(df_raw, y, year_range, "New Metric", state = st, n_years = 6)
-      nm_series <- list(list(name = "New Metric", values = as.numeric(multi_nm[["New Metric"]])))
-      newmetric_data <- list(years = as.numeric(multi_nm$Year), series = nm_series)
+    qs_vals <- annual_last_month(df_raw, y, year_range, "Quality (Separation)", state = st)
+    if (!is.null(qs_vals)) {
+      qs_nm <- annual_multi_year(df_raw, y, year_range, "Quality (Separation)", state = st, n_years = 6)
+      qs_series <- list(list(name = "Quality (Separation)", values = as.numeric(qs_nm[["Quality (Separation)"]])))
+      quality_sep_data <- list(years = as.numeric(qs_nm$Year), series = qs_series)
     }
 
-    # --- test line data 2 ---
 
-    newmetric_data_2 <- NULL
+    # --- Quality (Non - Separation) ---
 
-    nm_vals_2 <- annual_last_month(df_raw, y, year_range, "New Metric 2", state = st)
-    if (!is.null(nm_vals_2)) {
-      multi_nm_2 <- annual_multi_year(df_raw, y, year_range, "New Metric 2", state = st, n_years = 6)
-      nm_series_2 <- list(list(name = "New Metric 2", values = as.numeric(multi_nm_2[["New Metric 2"]])))
-      newmetric_data_2 <- list(years = as.numeric(multi_nm_2$Year), series = nm_series_2)
+    quality_nonsep_data <- NULL
+
+    nqs_vals <- annual_last_month(df_raw, y, year_range, "Quality (Non - Separation)", state = st)
+    if (!is.null(nqs_vals)) {
+      qns_nm <- annual_multi_year(df_raw, y, year_range, "Quality (Non - Separation)", state = st, n_years = 6)
+      qns_series <- list(list(name = "Quality (Non - Separation)", values = as.numeric(qns_nm[["Quality (Non - Separation)"]])))
+      quality_nonsep_data <- list(years = as.numeric(qns_nm$Year), series = qns_series)
     }
 
     # assemble per year
@@ -228,8 +229,8 @@ for (st in all_states) {
       timeliness = timeliness_data,
       improperfraud = improperfraud_data,
       nonmonetary = nm_data,
-      newmetric = newmetric_data,
-      newmetric_2 = newmetric_data_2
+      quality_sep = quality_sep_data,
+      quality_nonsep = quality_nonsep_data
     )
   }
 
@@ -290,11 +291,11 @@ section_html <- glue('
           <div id="overview_nonmonetary" class="chart-container"></div>
         </div>
 
-        <!-- Validation Table (moved here) -->
         <div class="chart-block" data-category="overview">
           <h4>Data Validation Table</h4>
           <div class="table-placeholder">TABLE TEST</div>
         </div>
+
       </div>
 
       <!-- Right Column -->
@@ -306,15 +307,15 @@ section_html <- glue('
         </div>
 
         <div class="chart-block" data-category="overview">
-          <h4>Test Metric</h4>
+          <h4>Quality Saparation</h4>
           <p class="chart-subtitle">Test Test</p>
-          <div id="overview_newmetric" class="chart-container"></div>
+          <div id="overview_quality_sep" class="chart-container"></div>
         </div>
 
         <div class="chart-block" data-category="overview">
-          <h4>Test Metric</h4>
+          <h4>Quality Non-Separation</h4>
           <p class="chart-subtitle">Test Test</p>
-          <div id="overview_newmetric_2" class="chart-container"></div>
+          <div id="overview_quality_nonsep" class="chart-container"></div>
         </div>
 
       </div>

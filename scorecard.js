@@ -580,21 +580,21 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     );
   }
 
-  //new metric dash logic for inserting overview logic
+  //quality_sep
 
-  if (category === "overview" && stateData.newmetric) {
-    const newData = {
+  if (category === "overview" && stateData.quality_sep) {
+    const qualitysep_data = {
       years: yearsRange,
-      series: stateData.newmetric.series.map((s) => {
+      series: stateData.quality_sep.series.map((s) => {
         const values = yearsRange.map((yr) => {
-          const idx = stateData.newmetric.years.indexOf(yr);
+          const idx = stateData.quality_sep.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
         return { ...s, values };
       }),
     };
 
-    renderLineChart("overview_newmetric", newData, {
+    renderLineChart("overview_quality_sep", qualitysep_data, {
       threshold: 50,
       thresholdLabel: "Target (50%)",
     });
@@ -602,19 +602,19 @@ function updateDashboard(baseYear, category, stateCode = "US") {
 
   //new metric dash logic for inserting overview logic_metric 2
 
-  if (category === "overview" && stateData.newmetric_2) {
-    const newData_2 = {
+  if (category === "overview" && stateData.quality_nonsep) {
+    const qualitynonsep_data = {
       years: yearsRange,
-      series: stateData.newmetric_2.series.map((s) => {
+      series: stateData.quality_nonsep.series.map((s) => {
         const values = yearsRange.map((yr) => {
-          const idx = stateData.newmetric_2.years.indexOf(yr);
+          const idx = stateData.quality_nonsep.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
         return { ...s, values };
       }),
     };
 
-    renderLineChart("overview_newmetric_2", newData_2, {
+    renderLineChart("overview_quality_nonsep", qualitynonsep_data, {
       threshold: 50,
       thresholdLabel: "Target (50%)",
     });
