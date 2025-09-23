@@ -265,6 +265,12 @@ section_html <- glue('
           <p class="chart-subtitle">Percent of determinations meeting ALP (80%)</p>
           <div id="overview_nonmonetary" class="chart-container"></div>
         </div>
+
+        <!-- Validation Table (moved here) -->
+        <div class="chart-block" data-category="overview">
+          <h4>Data Validation Table</h4>
+          <div class="table-placeholder">[Validation Table Placeholder]</div>
+        </div>
       </div>
 
       <!-- Right Column -->
@@ -287,12 +293,6 @@ section_html <- glue('
           <div class="chart-container placeholder-box"></div>
         </div>
       </div>
-    </div>
-
-    <!-- Validation Table -->
-    <div class="overview-table mt-4 chart-block" data-category="overview">
-      <h4>Data Validation Table</h4>
-      <div class="table-placeholder">[Validation Table Placeholder]</div>
     </div>
 
     <!-- ================= PROGRAM ================= -->
