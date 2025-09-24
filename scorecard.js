@@ -19,6 +19,8 @@ const metricColors = {
   "Nonmonetary Determination": "#9467bd",
 };
 
+const waitingWeekStates = ["CA", "VA", "WV"];
+
 // ------------------- Chart Renderers -------------------
 function renderPieChart(containerId, pieData, exportMode = false) {
   let chartDom = document.getElementById(containerId);
@@ -530,6 +532,17 @@ function updateDashboard(baseYear, category, stateCode = "US") {
         return { ...s, values };
       }),
     };
+
+    // --- Apply waiting week rule ---
+    if (stateCode !== "US") {
+      const waitingWeekStates = ["CA", "VA", "WV"]; // temp list
+      const isWaitingWeek = waitingWeekStates.includes(stateCode);
+
+      timelinessData.series = timelinessData.series.filter((s) =>
+        isWaitingWeek ? s.name.includes("21 days") : s.name.includes("14 days")
+      );
+    }
+
     renderTimelinessChart(
       category === "overview"
         ? "overview_timeliness"
