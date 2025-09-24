@@ -26,13 +26,9 @@ const US_COLOR = "#555";
 const ALT_COLOR = "#1f77ff";
 
 function getSeriesColor(series, chartType = "") {
-  if (series.isUS) {
-    if (chartType === "timeliness" && series.name.includes("21")) {
-      return ALT_COLOR;
-    }
-    return US_COLOR;
-  }
-  return STATE_COLOR;
+  if (series.forcedColor) return series.forcedColor;
+  if (series.isUS) return US_COLOR; // fallback grey
+  return STATE_COLOR; // green
 }
 
 const waitingWeekStates = ["CA", "VA", "WV"];
@@ -552,20 +548,26 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     };
 
     if (stateCode === "US") {
-      // National view: include both national lines
-      timelinessData.series = stateData.timeliness.series.map((s) => {
+      // National view: show both US lines, 14d grey, 21d blue
+      stateData.timeliness.series.forEach((s) => {
         const values = yearsRange.map((yr) => {
           const idx = stateData.timeliness.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
-        return { ...s, values, isUS: true };
+        let color = US_COLOR;
+        if (s.name.includes("21")) color = ALT_COLOR;
+        timelinessData.series.push({
+          ...s,
+          values,
+          isUS: true,
+          forcedColor: color,
+        });
       });
     } else {
-      // State view: pick only one of the two series
       const isWaitingWeek = waitingWeekStates.includes(stateCode);
       const wanted = isWaitingWeek ? "21 days" : "14 days";
 
-      // --- State line (green)
+      // State line (green)
       const stateSeries = stateData.timeliness.series.find((s) =>
         s.name.includes(wanted)
       );
@@ -577,7 +579,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
         timelinessData.series.push({ ...stateSeries, values });
       }
 
-      // --- US line (grey) – only matching 14 or 21
+      // US comparison line (grey, only matching 14/21)
       const usData = ALLDATA["US"][baseYear].timeliness;
       if (usData) {
         const usSeries = usData.series.find((s) => s.name.includes(wanted));
@@ -586,7 +588,12 @@ function updateDashboard(baseYear, category, stateCode = "US") {
             const idx = usData.years.indexOf(yr);
             return idx !== -1 ? usSeries.values[idx] : null;
           });
-          timelinessData.series.push({ ...usSeries, values, isUS: true });
+          timelinessData.series.push({
+            ...usSeries,
+            values,
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
         }
       }
     }
@@ -604,28 +611,39 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     (category === "benefit" || category === "overview") &&
     stateData.nonmonetary
   ) {
-    const nonmonetaryData = {
-      years: yearsRange,
-      series: stateData.nonmonetary.series.map((s) => {
+    const nonmonetaryData = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      nonmonetaryData.series = stateData.nonmonetary.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.nonmonetary.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      nonmonetaryData.series = stateData.nonmonetary.series.map((s) => {
         const values = yearsRange.map((yr) => {
           const idx = stateData.nonmonetary.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
         return { ...s, values };
-      }),
-    };
+      });
 
-    if (stateCode !== "US") {
       const usData = ALLDATA["US"][baseYear].nonmonetary;
       if (usData) {
-        const usSeries = usData.series.map((s) => {
+        usData.series.forEach((s) => {
           const values = yearsRange.map((yr) => {
             const idx = usData.years.indexOf(yr);
             return idx !== -1 ? s.values[idx] : null;
           });
-          return { ...s, values, isUS: true };
+          nonmonetaryData.series.push({
+            ...s,
+            values,
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
         });
-        nonmonetaryData.series.push(...usSeries);
       }
     }
 
@@ -637,30 +655,41 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     );
   }
 
-  // --- Improper payment
+  // --- Improper
   if (category === "overview" && stateData.improper) {
-    const improper_data = {
-      years: yearsRange,
-      series: stateData.improper.series.map((s) => {
+    const improper_data = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      improper_data.series = stateData.improper.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.improper.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      improper_data.series = stateData.improper.series.map((s) => {
         const values = yearsRange.map((yr) => {
           const idx = stateData.improper.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
         return { ...s, values };
-      }),
-    };
+      });
 
-    if (stateCode !== "US") {
       const usData = ALLDATA["US"][baseYear].improper;
       if (usData) {
-        const usSeries = usData.series.map((s) => {
+        usData.series.forEach((s) => {
           const values = yearsRange.map((yr) => {
             const idx = usData.years.indexOf(yr);
             return idx !== -1 ? s.values[idx] : null;
           });
-          return { ...s, values, isUS: true };
+          improper_data.series.push({
+            ...s,
+            values,
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
         });
-        improper_data.series.push(...usSeries);
       }
     }
 
@@ -670,30 +699,41 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     });
   }
 
-  // --- Fraud rate
+  // --- Fraud
   if (category === "overview" && stateData.fraud) {
-    const fraud_data = {
-      years: yearsRange,
-      series: stateData.fraud.series.map((s) => {
+    const fraud_data = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      fraud_data.series = stateData.fraud.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.fraud.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      fraud_data.series = stateData.fraud.series.map((s) => {
         const values = yearsRange.map((yr) => {
           const idx = stateData.fraud.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
         return { ...s, values };
-      }),
-    };
+      });
 
-    if (stateCode !== "US") {
       const usData = ALLDATA["US"][baseYear].fraud;
       if (usData) {
-        const usSeries = usData.series.map((s) => {
+        usData.series.forEach((s) => {
           const values = yearsRange.map((yr) => {
             const idx = usData.years.indexOf(yr);
             return idx !== -1 ? s.values[idx] : null;
           });
-          return { ...s, values, isUS: true };
+          fraud_data.series.push({
+            ...s,
+            values,
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
         });
-        fraud_data.series.push(...usSeries);
       }
     }
 
@@ -705,28 +745,39 @@ function updateDashboard(baseYear, category, stateCode = "US") {
 
   // --- Quality separation
   if (category === "overview" && stateData.quality_sep) {
-    const qualitysep_data = {
-      years: yearsRange,
-      series: stateData.quality_sep.series.map((s) => {
+    const qualitysep_data = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      qualitysep_data.series = stateData.quality_sep.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.quality_sep.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      qualitysep_data.series = stateData.quality_sep.series.map((s) => {
         const values = yearsRange.map((yr) => {
           const idx = stateData.quality_sep.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
         return { ...s, values };
-      }),
-    };
+      });
 
-    if (stateCode !== "US") {
       const usData = ALLDATA["US"][baseYear].quality_sep;
       if (usData) {
-        const usSeries = usData.series.map((s) => {
+        usData.series.forEach((s) => {
           const values = yearsRange.map((yr) => {
             const idx = usData.years.indexOf(yr);
             return idx !== -1 ? s.values[idx] : null;
           });
-          return { ...s, values, isUS: true };
+          qualitysep_data.series.push({
+            ...s,
+            values,
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
         });
-        qualitysep_data.series.push(...usSeries);
       }
     }
 
@@ -738,28 +789,39 @@ function updateDashboard(baseYear, category, stateCode = "US") {
 
   // --- Quality non-separation
   if (category === "overview" && stateData.quality_nonsep) {
-    const qualitynonsep_data = {
-      years: yearsRange,
-      series: stateData.quality_nonsep.series.map((s) => {
+    const qualitynonsep_data = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      qualitynonsep_data.series = stateData.quality_nonsep.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.quality_nonsep.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      qualitynonsep_data.series = stateData.quality_nonsep.series.map((s) => {
         const values = yearsRange.map((yr) => {
           const idx = stateData.quality_nonsep.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
         return { ...s, values };
-      }),
-    };
+      });
 
-    if (stateCode !== "US") {
       const usData = ALLDATA["US"][baseYear].quality_nonsep;
       if (usData) {
-        const usSeries = usData.series.map((s) => {
+        usData.series.forEach((s) => {
           const values = yearsRange.map((yr) => {
             const idx = usData.years.indexOf(yr);
             return idx !== -1 ? s.values[idx] : null;
           });
-          return { ...s, values, isUS: true };
+          qualitynonsep_data.series.push({
+            ...s,
+            values,
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
         });
-        qualitynonsep_data.series.push(...usSeries);
       }
     }
 
