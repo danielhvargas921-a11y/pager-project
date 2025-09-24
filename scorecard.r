@@ -80,7 +80,7 @@ annual_multi_year <- function(df, base_year, range, metrics, state = "US", n_yea
 # ---------------- Build data ----------------
 all_years <- c(2024, 2025)
 all_states <- unique(df_raw$State)
-#all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
+all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
 
 all_data <- list()
 

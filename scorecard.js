@@ -19,6 +19,22 @@ const metricColors = {
   "Nonmonetary Determination": "#9467bd",
 };
 
+//consistent coloring
+
+const STATE_COLOR = "#2a9d8f";
+const US_COLOR = "#555";
+const ALT_COLOR = "#1f77ff";
+
+function getSeriesColor(series, chartType = "") {
+  if (series.isUS) {
+    if (chartType === "timeliness" && series.name.includes("21")) {
+      return ALT_COLOR;
+    }
+    return US_COLOR;
+  }
+  return STATE_COLOR;
+}
+
 const waitingWeekStates = ["CA", "VA", "WV"];
 
 // ------------------- Chart Renderers -------------------
@@ -120,10 +136,13 @@ function renderTimelinessChart(containerId, data, exportMode = false) {
     smooth: true,
     symbolSize: 8,
     emphasis: { focus: "series" },
-    lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
+    lineStyle: { width: 3, color: getSeriesColor(s, "timeliness") },
+    itemStyle: { color: getSeriesColor(s, "timeliness") },
     data: s.values.map((v) => ({
       value: v,
-      itemStyle: { color: v >= alpThreshold ? "#2a9d8f" : "#e63946" },
+      itemStyle: {
+        color: v >= alpThreshold ? STATE_COLOR : "#e63946",
+      },
     })),
   }));
 
@@ -157,6 +176,7 @@ function renderTimelinessChart(containerId, data, exportMode = false) {
 function renderNonmonetaryChart(containerId, data, exportMode = false) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
+
   if (charts[containerId]) echarts.dispose(chartDom);
   const chart = echarts.init(chartDom, null, { renderer: "svg" });
 
@@ -169,10 +189,13 @@ function renderNonmonetaryChart(containerId, data, exportMode = false) {
     smooth: true,
     symbolSize: 8,
     emphasis: { focus: "series" },
-    lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
+    lineStyle: { width: 3, color: getSeriesColor(s) },
+    itemStyle: { color: getSeriesColor(s) },
     data: s.values.map((v) => ({
       value: v,
-      itemStyle: { color: v >= alpThreshold ? "#2a9d8f" : "#e63946" },
+      itemStyle: {
+        color: v >= alpThreshold ? STATE_COLOR : "#e63946",
+      },
     })),
   }));
 
@@ -203,14 +226,17 @@ function renderNonmonetaryChart(containerId, data, exportMode = false) {
   charts[containerId] = chart;
 }
 
-function renderImproperFraudChart(containerId, data, exportMode = false) {
+function renderLineChart(containerId, data, options = {}, exportMode = false) {
   const chartDom = document.getElementById(containerId);
   if (!chartDom) return;
-  if (charts[containerId]) echarts.dispose(chartDom);
-  const chart = echarts.init(chartDom, null, { renderer: "svg" });
 
-  const years = data.years;
-  const alpThreshold = 10;
+  if (charts[containerId]) {
+    echarts.dispose(chartDom);
+    delete charts[containerId];
+  }
+
+  const chart = echarts.init(chartDom, null, { renderer: "svg" });
+  const years = data.years || [];
 
   const seriesList = data.series.map((s) => ({
     name: s.name,
@@ -218,12 +244,20 @@ function renderImproperFraudChart(containerId, data, exportMode = false) {
     smooth: true,
     symbolSize: 8,
     emphasis: { focus: "series" },
-    lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
-    data: s.values.map((v) => ({
-      value: v,
-      itemStyle: { color: v > alpThreshold ? "#e63946" : "#2a9d8f" },
-    })),
+    lineStyle: { width: 3, color: getSeriesColor(s) },
+    itemStyle: { color: getSeriesColor(s) },
+    data: s.values.map((v) => ({ value: v })),
   }));
+
+  if (options.threshold !== undefined) {
+    seriesList.unshift({
+      name: options.thresholdLabel || `Threshold (${options.threshold}%)`,
+      type: "line",
+      symbol: "none",
+      lineStyle: { type: "dashed", color: "red", width: 2 },
+      data: years.map(() => options.threshold),
+    });
+  }
 
   const option = {
     animation: !exportMode,
@@ -236,16 +270,7 @@ function renderImproperFraudChart(containerId, data, exportMode = false) {
       name: "Percent",
       axisLabel: { formatter: "{value}%" },
     },
-    series: [
-      {
-        name: "ALP (10%)",
-        type: "line",
-        symbol: "none",
-        lineStyle: { type: "dashed", color: "red", width: 2 },
-        data: years.map(() => alpThreshold),
-      },
-      ...seriesList,
-    ],
+    series: seriesList,
   };
 
   chart.setOption(option);
@@ -262,22 +287,19 @@ function renderLineChart(containerId, data, options = {}, exportMode = false) {
   }
 
   const chart = echarts.init(chartDom, null, { renderer: "svg" });
-
   const years = data.years || [];
+
   const seriesList = data.series.map((s) => ({
     name: s.name,
     type: "line",
     smooth: true,
     symbolSize: 8,
     emphasis: { focus: "series" },
-    lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
-    data: s.values.map((v) => ({
-      value: v,
-      itemStyle: { color: metricColors[s.name] || "#999" },
-    })),
+    lineStyle: { width: 3, color: getSeriesColor(s) },
+    itemStyle: { color: getSeriesColor(s) },
+    data: s.values.map((v) => ({ value: v })),
   }));
 
-  //
   if (options.threshold !== undefined) {
     seriesList.unshift({
       name: options.thresholdLabel || `Threshold (${options.threshold}%)`,
@@ -496,7 +518,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
   const yearsRange = [];
   for (let y = baseYear - 5; y <= baseYear; y++) yearsRange.push(y);
 
-  // --- Render charts depending on category
+  // --- Program Pie
   if (category === "program" && stateData.pie) {
     const pieData = Object.entries(stateData.pie || {}).map(
       ([name, value]) => ({ name, value })
@@ -504,6 +526,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     renderPieChart("pie_chart_container", pieData);
   }
 
+  // --- Program Bump
   if (category === "program" && stateData.bump) {
     const bumpData = {
       years: yearsRange,
@@ -518,6 +541,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     renderBumpChart("bump_chart_container", bumpData);
   }
 
+  // --- Timeliness
   if (
     (category === "benefit" || category === "overview") &&
     stateData.timeliness
@@ -533,14 +557,26 @@ function updateDashboard(baseYear, category, stateCode = "US") {
       }),
     };
 
-    // --- Apply waiting week rule ---
     if (stateCode !== "US") {
-      const waitingWeekStates = ["CA", "VA", "WV"]; // temp list
       const isWaitingWeek = waitingWeekStates.includes(stateCode);
 
+      // Keep only the relevant STATE line
       timelinessData.series = timelinessData.series.filter((s) =>
         isWaitingWeek ? s.name.includes("21 days") : s.name.includes("14 days")
       );
+
+      // Always add BOTH US lines
+      const usData = ALLDATA["US"][baseYear].timeliness;
+      if (usData) {
+        const usSeries = usData.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values, isUS: true };
+        });
+        timelinessData.series.push(...usSeries);
+      }
     }
 
     renderTimelinessChart(
@@ -551,6 +587,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     );
   }
 
+  // --- Nonmonetary
   if (
     (category === "benefit" || category === "overview") &&
     stateData.nonmonetary
@@ -565,6 +602,21 @@ function updateDashboard(baseYear, category, stateCode = "US") {
         return { ...s, values };
       }),
     };
+
+    if (stateCode !== "US") {
+      const usData = ALLDATA["US"][baseYear].nonmonetary;
+      if (usData) {
+        const usSeries = usData.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values, isUS: true };
+        });
+        nonmonetaryData.series.push(...usSeries);
+      }
+    }
+
     renderNonmonetaryChart(
       category === "overview"
         ? "overview_nonmonetary"
@@ -573,8 +625,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     );
   }
 
-  //improper payment
-
+  // --- Improper payment
   if (category === "overview" && stateData.improper) {
     const improper_data = {
       years: yearsRange,
@@ -587,14 +638,27 @@ function updateDashboard(baseYear, category, stateCode = "US") {
       }),
     };
 
+    if (stateCode !== "US") {
+      const usData = ALLDATA["US"][baseYear].improper;
+      if (usData) {
+        const usSeries = usData.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values, isUS: true };
+        });
+        improper_data.series.push(...usSeries);
+      }
+    }
+
     renderLineChart("improper_chart_container", improper_data, {
       threshold: 50,
       thresholdLabel: "Target (50%)",
     });
   }
 
-  //fraud rate
-
+  // --- Fraud rate
   if (category === "overview" && stateData.fraud) {
     const fraud_data = {
       years: yearsRange,
@@ -607,14 +671,27 @@ function updateDashboard(baseYear, category, stateCode = "US") {
       }),
     };
 
+    if (stateCode !== "US") {
+      const usData = ALLDATA["US"][baseYear].fraud;
+      if (usData) {
+        const usSeries = usData.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values, isUS: true };
+        });
+        fraud_data.series.push(...usSeries);
+      }
+    }
+
     renderLineChart("fraud_chart_container", fraud_data, {
       threshold: 50,
       thresholdLabel: "Target (50%)",
     });
   }
 
-  //quality_sep
-
+  // --- Quality separation
   if (category === "overview" && stateData.quality_sep) {
     const qualitysep_data = {
       years: yearsRange,
@@ -627,14 +704,27 @@ function updateDashboard(baseYear, category, stateCode = "US") {
       }),
     };
 
+    if (stateCode !== "US") {
+      const usData = ALLDATA["US"][baseYear].quality_sep;
+      if (usData) {
+        const usSeries = usData.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values, isUS: true };
+        });
+        qualitysep_data.series.push(...usSeries);
+      }
+    }
+
     renderLineChart("overview_quality_sep", qualitysep_data, {
       threshold: 50,
       thresholdLabel: "Target (50%)",
     });
   }
 
-  //quality_nonsep
-
+  // --- Quality non-separation
   if (category === "overview" && stateData.quality_nonsep) {
     const qualitynonsep_data = {
       years: yearsRange,
@@ -646,6 +736,20 @@ function updateDashboard(baseYear, category, stateCode = "US") {
         return { ...s, values };
       }),
     };
+
+    if (stateCode !== "US") {
+      const usData = ALLDATA["US"][baseYear].quality_nonsep;
+      if (usData) {
+        const usSeries = usData.series.map((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          return { ...s, values, isUS: true };
+        });
+        qualitynonsep_data.series.push(...usSeries);
+      }
+    }
 
     renderLineChart("overview_quality_nonsep", qualitynonsep_data, {
       threshold: 50,
