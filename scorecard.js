@@ -286,14 +286,39 @@ function renderLineChart(containerId, data, options = {}, exportMode = false) {
 
 //comparison table
 
+// ------------------- Comparison Table -------------------
 function renderComparisonTable(containerId, tableData, baseYear) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
   tableData.sort((a, b) => b.Current - a.Current);
 
+  function getThreshold(metric) {
+    if (metric.includes("Improper")) return 50;
+    if (metric.includes("Fraud")) return 50;
+    if (metric.includes("Quality Separation")) return 50;
+    if (metric.includes("Quality Non-Separation")) return 50;
+    if (metric.includes("Nonmonetary")) return 80;
+    if (metric.includes("First Payment Timeliness")) return 87;
+    return null;
+  }
+
+  function meetsALP(metric, value) {
+    if (value == null || isNaN(value)) return false;
+    const th = getThreshold(metric);
+    if (th == null) return false;
+
+    if (metric.includes("Improper") || metric.includes("Fraud")) {
+      return value <= th;
+    }
+    return value >= th;
+  }
+
   const rows = tableData
     .map((row) => {
+      const th = getThreshold(row.Metric);
+      const alpTxt = th ? `${th}%` : "NA";
+
       const currTxt =
         row.Current != null && !isNaN(row.Current) ? `${row.Current}%` : "NA";
       const prevTxt =
@@ -305,11 +330,19 @@ function renderComparisonTable(containerId, tableData, baseYear) {
           ? `${row.RelativeChange > 0 ? "+" : ""}${row.RelativeChange}%`
           : "NA";
 
+      const currClass = meetsALP(row.Metric, row.Current)
+        ? "bg-success text-white"
+        : "bg-danger text-white";
+      const prevClass = meetsALP(row.Metric, row.Previous)
+        ? "bg-success text-white"
+        : "bg-danger text-white";
+
       return `
 <tr>
   <td>${row.Metric}</td>
-  <td>${currTxt}</td>
-  <td>${prevTxt}</td>
+  <td>${alpTxt}</td>
+  <td class="${currClass}">${currTxt}</td>
+  <td class="${prevClass}">${prevTxt}</td>
   <td>${rel}</td>
 </tr>`;
     })
@@ -321,6 +354,7 @@ function renderComparisonTable(containerId, tableData, baseYear) {
     <thead>
       <tr>
         <th>Metric</th>
+        <th>ALP</th>
         <th>% of Overpayments (${baseYear} PIIA)</th>
         <th>% of Overpayments (${baseYear - 1} PIIA)</th>
         <th>Relative Change</th>
@@ -329,6 +363,91 @@ function renderComparisonTable(containerId, tableData, baseYear) {
     <tbody>${rows}</tbody>
   </table>
 </div>`;
+}
+
+//overview table logic
+
+function buildOverviewTableData(stateCode, baseYear) {
+  const stateData = ALLDATA[stateCode][baseYear];
+  const tableData = [];
+
+  function addMetricRow(metricKey, label, threshold) {
+    if (!stateData[metricKey]) return;
+
+    const series = stateData[metricKey].series[0]; // state has one series
+    const idxCurr = stateData[metricKey].years.indexOf(baseYear);
+    const idxPrev = stateData[metricKey].years.indexOf(baseYear - 1);
+    const curr = idxCurr !== -1 ? series.values[idxCurr] : null;
+    const prev = idxPrev !== -1 ? series.values[idxPrev] : null;
+
+    let rel = null;
+    if (curr != null && prev != null) {
+      rel = +(curr - prev).toFixed(1);
+    }
+
+    tableData.push({
+      Metric: label,
+      Current: curr != null ? +curr.toFixed(1) : null,
+      Previous: prev != null ? +prev.toFixed(1) : null,
+      RelativeChange: rel,
+    });
+  }
+
+  // Improper
+  addMetricRow("improper", "Improper Payment Rate");
+  // Fraud
+  addMetricRow("fraud", "Fraud Rate");
+  // Quality Separation
+  addMetricRow("quality_sep", "Quality Separation");
+  // Quality Non-Separation
+  addMetricRow("quality_nonsep", "Quality Non-Separation");
+  // Nonmonetary
+  addMetricRow("nonmonetary", "Nonmonetary Determination");
+
+  // Timeliness (special case)
+  if (stateData.timeliness) {
+    if (stateCode === "US") {
+      // Add both 14 and 21
+      stateData.timeliness.series.forEach((s) => {
+        const idxCurr = stateData.timeliness.years.indexOf(baseYear);
+        const idxPrev = stateData.timeliness.years.indexOf(baseYear - 1);
+        const curr = idxCurr !== -1 ? s.values[idxCurr] : null;
+        const prev = idxPrev !== -1 ? s.values[idxPrev] : null;
+        let rel = null;
+        if (curr != null && prev != null) rel = +(curr - prev).toFixed(1);
+
+        tableData.push({
+          Metric: s.name,
+          Current: curr != null ? +curr.toFixed(1) : null,
+          Previous: prev != null ? +prev.toFixed(1) : null,
+          RelativeChange: rel,
+        });
+      });
+    } else {
+      const isWaitingWeek = waitingWeekStates.includes(stateCode);
+      const wanted = isWaitingWeek ? "21 days" : "14 days";
+      const s = stateData.timeliness.series.find((ss) =>
+        ss.name.includes(wanted)
+      );
+      if (s) {
+        const idxCurr = stateData.timeliness.years.indexOf(baseYear);
+        const idxPrev = stateData.timeliness.years.indexOf(baseYear - 1);
+        const curr = idxCurr !== -1 ? s.values[idxCurr] : null;
+        const prev = idxPrev !== -1 ? s.values[idxPrev] : null;
+        let rel = null;
+        if (curr != null && prev != null) rel = +(curr - prev).toFixed(1);
+
+        tableData.push({
+          Metric: s.name,
+          Current: curr != null ? +curr.toFixed(1) : null,
+          Previous: prev != null ? +prev.toFixed(1) : null,
+          RelativeChange: rel,
+        });
+      }
+    }
+  }
+
+  return tableData;
 }
 
 // ------------------- Selectors -------------------
@@ -809,10 +928,16 @@ function switchView(view) {
     document.getElementById("table-view").style.display = "block";
 
     const stateData = ALLDATA[currentState][currentBaseYear];
-    const tableData =
-      currentCategory === "program"
-        ? stateData.table_program
-        : stateData.table_benefit;
+    let tableData = [];
+
+    if (currentCategory === "program") {
+      tableData = stateData.table_program || [];
+    } else if (currentCategory === "benefit") {
+      tableData = stateData.table_benefit || [];
+    } else if (currentCategory === "overview") {
+      tableData = buildOverviewTableData(currentState, currentBaseYear);
+    }
+
     renderComparisonTable(
       "comparison_table_container",
       tableData || [],
