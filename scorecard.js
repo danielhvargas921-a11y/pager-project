@@ -542,20 +542,17 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     (category === "benefit" || category === "overview") &&
     stateData.timeliness
   ) {
-    const timelinessData = {
-      years: yearsRange,
-      series: [],
-    };
+    const timelinessData = { years: yearsRange, series: [] };
 
     if (stateCode === "US") {
-      // National view: show both US lines, 14d grey, 21d blue
+      // National view → keep metric names in legend
       stateData.timeliness.series.forEach((s) => {
         const values = yearsRange.map((yr) => {
           const idx = stateData.timeliness.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
         let color = US_COLOR;
-        if (s.name.includes("21")) color = ALT_COLOR;
+        if (s.name.includes("21")) color = ALT_COLOR; // blue
         timelinessData.series.push({
           ...s,
           values,
@@ -579,7 +576,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
         timelinessData.series.push({ ...stateSeries, values });
       }
 
-      // US comparison line (grey, only matching 14/21)
+      // US comparison line (grey) – labeled "US"
       const usData = ALLDATA["US"][baseYear].timeliness;
       if (usData) {
         const usSeries = usData.series.find((s) => s.name.includes(wanted));
@@ -591,6 +588,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
           timelinessData.series.push({
             ...usSeries,
             values,
+            name: "US", // override legend label
             isUS: true,
             forcedColor: US_COLOR,
           });
@@ -640,6 +638,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
           nonmonetaryData.series.push({
             ...s,
             values,
+            name: "US", // override legend label
             isUS: true,
             forcedColor: US_COLOR,
           });
@@ -686,6 +685,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
           improper_data.series.push({
             ...s,
             values,
+            name: "US", // override legend label
             isUS: true,
             forcedColor: US_COLOR,
           });
@@ -730,6 +730,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
           fraud_data.series.push({
             ...s,
             values,
+            name: "US", // override legend label
             isUS: true,
             forcedColor: US_COLOR,
           });
@@ -774,6 +775,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
           qualitysep_data.series.push({
             ...s,
             values,
+            name: "US", // override legend label
             isUS: true,
             forcedColor: US_COLOR,
           });
@@ -818,6 +820,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
           qualitynonsep_data.series.push({
             ...s,
             values,
+            name: "US", // override legend label
             isUS: true,
             forcedColor: US_COLOR,
           });
