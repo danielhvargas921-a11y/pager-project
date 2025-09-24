@@ -561,7 +561,27 @@ function updateDashboard(baseYear, category, stateCode = "US") {
 
   const stateData = ALLDATA[stateCode][baseYear];
 
-  // --- Title
+  // --- Handle TABLE VIEW refresh ---
+  if (document.getElementById("table-view").style.display === "block") {
+    let tableData = [];
+
+    if (category === "program") {
+      tableData = stateData.table_program || [];
+    } else if (category === "benefit") {
+      tableData = stateData.table_benefit || [];
+    } else if (category === "overview") {
+      tableData = buildOverviewTableData(stateCode, baseYear);
+    }
+
+    renderComparisonTable(
+      "comparison_table_container",
+      tableData || [],
+      baseYear
+    );
+    return; // ✅ don’t render plots while in table view
+  }
+
+  // --- Title ---
   const catLabel =
     category === "program"
       ? "Program Integrity Measures"
@@ -575,13 +595,13 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     <div class="title-sub">(${stateLabel}, ${catLabel})</div>
   `;
 
-  // --- Show correct section
+  // --- Show correct section ---
   document
     .querySelectorAll(".metric-section")
     .forEach((s) => (s.style.display = "none"));
   document.getElementById("section_dashboard").style.display = "block";
 
-  // --- Chart visibility
+  // --- Chart visibility ---
   document
     .querySelectorAll(".chart-block")
     .forEach((b) => (b.style.display = "none"));
@@ -589,11 +609,11 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     .querySelectorAll(`.chart-block[data-category='${category}']`)
     .forEach((b) => (b.style.display = "block"));
 
-  // --- Years range
+  // --- Years range ---
   const yearsRange = [];
   for (let y = baseYear - 5; y <= baseYear; y++) yearsRange.push(y);
 
-  // --- Program Pie
+  // --- Program Pie ---
   if (category === "program" && stateData.pie) {
     const pieData = Object.entries(stateData.pie || {}).map(
       ([name, value]) => ({ name, value })
@@ -601,7 +621,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     renderPieChart("pie_chart_container", pieData);
   }
 
-  // --- Program Bump
+  // --- Program Bump ---
   if (category === "program" && stateData.bump) {
     const bumpData = {
       years: yearsRange,
@@ -616,7 +636,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     renderBumpChart("bump_chart_container", bumpData);
   }
 
-  // --- Timeliness
+  // --- Timeliness ---
   if (
     (category === "benefit" || category === "overview") &&
     stateData.timeliness
@@ -683,7 +703,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     );
   }
 
-  // --- Nonmonetary
+  // --- Nonmonetary ---
   if (
     (category === "benefit" || category === "overview") &&
     stateData.nonmonetary
@@ -733,7 +753,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     );
   }
 
-  // --- Improper
+  // --- Improper ---
   if (category === "overview" && stateData.improper) {
     const improper_data = { years: yearsRange, series: [] };
 
@@ -778,7 +798,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     });
   }
 
-  // --- Fraud
+  // --- Fraud ---
   if (category === "overview" && stateData.fraud) {
     const fraud_data = { years: yearsRange, series: [] };
 
@@ -823,7 +843,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     });
   }
 
-  // --- Quality separation
+  // --- Quality separation ---
   if (category === "overview" && stateData.quality_sep) {
     const qualitysep_data = { years: yearsRange, series: [] };
 
@@ -868,7 +888,7 @@ function updateDashboard(baseYear, category, stateCode = "US") {
     });
   }
 
-  // --- Quality non-separation
+  // --- Quality non-separation ---
   if (category === "overview" && stateData.quality_nonsep) {
     const qualitynonsep_data = { years: yearsRange, series: [] };
 
