@@ -979,6 +979,7 @@ function renderLineChart(containerId, data, options = {}, exportMode = false) {
 
   const chart = echarts.init(chartDom, null, { renderer: "svg" });
   const years = data.years || [];
+  const threshold = options.threshold;
 
   const seriesList = data.series.map((s) => ({
     name: s.name,
@@ -988,67 +989,26 @@ function renderLineChart(containerId, data, options = {}, exportMode = false) {
     emphasis: { focus: "series" },
     lineStyle: { width: 3, color: getSeriesColor(s) },
     itemStyle: { color: getSeriesColor(s) },
-    data: s.values.map((v) => ({ value: v })),
+    data: s.values.map((v) => {
+      if (threshold !== undefined && v != null) {
+        return {
+          value: v,
+          itemStyle: {
+            color: v >= threshold ? STATE_COLOR : "#e63946", // green/red circles
+          },
+        };
+      }
+      return { value: v };
+    }),
   }));
 
-  if (options.threshold !== undefined) {
+  if (threshold !== undefined) {
     seriesList.unshift({
-      name: options.thresholdLabel || `Threshold (${options.threshold}%)`,
+      name: options.thresholdLabel || `Threshold (${threshold}%)`,
       type: "line",
       symbol: "none",
       lineStyle: { type: "dashed", color: "red", width: 2 },
-      data: years.map(() => options.threshold),
-    });
-  }
-
-  const option = {
-    animation: !exportMode,
-    tooltip: { trigger: "axis" },
-    legend: { bottom: 0 },
-    grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
-    xAxis: { type: "category", boundaryGap: false, data: years },
-    yAxis: {
-      type: "value",
-      name: "Percent",
-      axisLabel: { formatter: "{value}%" },
-    },
-    series: seriesList,
-  };
-
-  chart.setOption(option);
-  charts[containerId] = chart;
-}
-
-function renderLineChart(containerId, data, options = {}, exportMode = false) {
-  const chartDom = document.getElementById(containerId);
-  if (!chartDom) return;
-
-  if (charts[containerId]) {
-    echarts.dispose(chartDom);
-    delete charts[containerId];
-  }
-
-  const chart = echarts.init(chartDom, null, { renderer: "svg" });
-  const years = data.years || [];
-
-  const seriesList = data.series.map((s) => ({
-    name: s.name,
-    type: "line",
-    smooth: true,
-    symbolSize: 8,
-    emphasis: { focus: "series" },
-    lineStyle: { width: 3, color: getSeriesColor(s) },
-    itemStyle: { color: getSeriesColor(s) },
-    data: s.values.map((v) => ({ value: v })),
-  }));
-
-  if (options.threshold !== undefined) {
-    seriesList.unshift({
-      name: options.thresholdLabel || `Threshold (${options.threshold}%)`,
-      type: "line",
-      symbol: "none",
-      lineStyle: { type: "dashed", color: "red", width: 2 },
-      data: years.map(() => options.threshold),
+      data: years.map(() => threshold),
     });
   }
 
