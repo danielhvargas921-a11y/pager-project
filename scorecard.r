@@ -10,9 +10,11 @@ library(lubridate)
 
 # hardcoded variables
 year_range <- "Jul-Jun"
-base_path <- "C:/Users/Vargas.Daniel.H/Desktop/SCORE CARD PROJECT/main/scorecard/pager-project"
+base_path <- "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
 
 # "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
+
+# "C:/Users/Vargas.Daniel.H/Desktop/SCORE CARD PROJECT/main/scorecard/pager-project"
 
 f <- file.path(base_path, "scorecard_data.csv")
 df_raw <- read.csv(f, stringsAsFactors = FALSE, header = TRUE, check.names = FALSE)

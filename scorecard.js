@@ -291,7 +291,18 @@ function renderComparisonTable(containerId, tableData, baseYear) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  tableData.sort((a, b) => b.Current - a.Current);
+  // Defensive sort: treat null/NaN as very small
+  tableData.sort((a, b) => {
+    const aVal =
+      typeof a.Current === "number" && !isNaN(a.Current)
+        ? a.Current
+        : -Infinity;
+    const bVal =
+      typeof b.Current === "number" && !isNaN(b.Current)
+        ? b.Current
+        : -Infinity;
+    return bVal - aVal;
+  });
 
   function getThreshold(metric) {
     if (metric.includes("Improper")) return 50;
@@ -346,8 +357,8 @@ function renderComparisonTable(containerId, tableData, baseYear) {
 
   container.innerHTML = `
 <style>
-  .comparison-table .pass { background-color: #cdeccd  !important; }  /* very light green */
-  .comparison-table .fail { background-color: #f3c6c6  !important; }  /* very light red */
+  .comparison-table .pass { background-color: #cdeccd !important; }  /* very light green */
+  .comparison-table .fail { background-color: #f3c6c6 !important; }  /* very light red */
 </style>
 <div class="table-responsive">
   <table class="table table-bordered table-sm text-center align-middle comparison-table">
@@ -371,55 +382,58 @@ function buildOverviewTableData(stateCode, baseYear) {
   const stateData = ALLDATA[stateCode][baseYear];
   const tableData = [];
 
-  function addMetricRow(metricKey, label, threshold) {
+  function safeNumber(v) {
+    if (v === null || v === undefined) return null;
+    const num = Number(v);
+    return isNaN(num) ? null : num;
+  }
+
+  function addMetricRow(metricKey, label) {
     if (!stateData[metricKey]) return;
 
     const series = stateData[metricKey].series[0]; // state has one series
     const idxCurr = stateData[metricKey].years.indexOf(baseYear);
     const idxPrev = stateData[metricKey].years.indexOf(baseYear - 1);
-    const curr = idxCurr !== -1 ? series.values[idxCurr] : null;
-    const prev = idxPrev !== -1 ? series.values[idxPrev] : null;
+
+    const curr = idxCurr !== -1 ? safeNumber(series.values[idxCurr]) : null;
+    const prev = idxPrev !== -1 ? safeNumber(series.values[idxPrev]) : null;
 
     let rel = null;
-    if (curr != null && prev != null) {
-      rel = +(curr - prev).toFixed(1);
-    }
+    if (curr != null && prev != null) rel = +(curr - prev).toFixed(1);
 
     tableData.push({
       Metric: label,
-      Current: curr != null ? +curr.toFixed(1) : null,
-      Previous: prev != null ? +prev.toFixed(1) : null,
+      Current: curr,
+      Previous: prev,
       RelativeChange: rel,
     });
   }
 
-  // Improper
+  // Core overview metrics
   addMetricRow("improper", "Improper Payment Rate");
-  // Fraud
   addMetricRow("fraud", "Fraud Rate");
-  // Quality Separation
   addMetricRow("quality_sep", "Quality Separation");
-  // Quality Non-Separation
   addMetricRow("quality_nonsep", "Quality Non-Separation");
-  // Nonmonetary
   addMetricRow("nonmonetary", "Nonmonetary Determination");
 
   // Timeliness (special case)
   if (stateData.timeliness) {
     if (stateCode === "US") {
-      // Add both 14 and 21
+      // Add both 14 and 21 days
       stateData.timeliness.series.forEach((s) => {
         const idxCurr = stateData.timeliness.years.indexOf(baseYear);
         const idxPrev = stateData.timeliness.years.indexOf(baseYear - 1);
-        const curr = idxCurr !== -1 ? s.values[idxCurr] : null;
-        const prev = idxPrev !== -1 ? s.values[idxPrev] : null;
+
+        const curr = idxCurr !== -1 ? safeNumber(s.values[idxCurr]) : null;
+        const prev = idxPrev !== -1 ? safeNumber(s.values[idxPrev]) : null;
+
         let rel = null;
         if (curr != null && prev != null) rel = +(curr - prev).toFixed(1);
 
         tableData.push({
           Metric: s.name,
-          Current: curr != null ? +curr.toFixed(1) : null,
-          Previous: prev != null ? +prev.toFixed(1) : null,
+          Current: curr,
+          Previous: prev,
           RelativeChange: rel,
         });
       });
@@ -429,18 +443,21 @@ function buildOverviewTableData(stateCode, baseYear) {
       const s = stateData.timeliness.series.find((ss) =>
         ss.name.includes(wanted)
       );
+
       if (s) {
         const idxCurr = stateData.timeliness.years.indexOf(baseYear);
         const idxPrev = stateData.timeliness.years.indexOf(baseYear - 1);
-        const curr = idxCurr !== -1 ? s.values[idxCurr] : null;
-        const prev = idxPrev !== -1 ? s.values[idxPrev] : null;
+
+        const curr = idxCurr !== -1 ? safeNumber(s.values[idxCurr]) : null;
+        const prev = idxPrev !== -1 ? safeNumber(s.values[idxPrev]) : null;
+
         let rel = null;
         if (curr != null && prev != null) rel = +(curr - prev).toFixed(1);
 
         tableData.push({
           Metric: s.name,
-          Current: curr != null ? +curr.toFixed(1) : null,
-          Previous: prev != null ? +prev.toFixed(1) : null,
+          Current: curr,
+          Previous: prev,
           RelativeChange: rel,
         });
       }
