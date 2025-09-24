@@ -10,7 +10,9 @@ library(lubridate)
 
 # hardcoded variables
 year_range <- "Jul-Jun"
-base_path <- "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
+base_path <- "C:/Users/Vargas.Daniel.H/Desktop/SCORE CARD PROJECT/main/scorecard/pager-project"
+
+# "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
 
 f <- file.path(base_path, "scorecard_data.csv")
 df_raw <- read.csv(f, stringsAsFactors = FALSE, header = TRUE, check.names = FALSE)
@@ -80,7 +82,7 @@ annual_multi_year <- function(df, base_year, range, metrics, state = "US", n_yea
 # ---------------- Build data ----------------
 all_years <- c(2024, 2025)
 all_states <- unique(df_raw$State)
-#all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
+all_states <- c("AK", "AL", "US") ### TEMPORARY CODE TESTING
 
 all_data <- list()
 
@@ -148,12 +150,14 @@ for (st in all_states) {
       df_raw,
       y,
       year_range,
-      c(metrics_for_pie,
+      c(
+        metrics_for_pie,
         metrics_timeliness,
         "Nonmonetary Determination",
         metrics_improperfraud,
         "Quality (Separation)",
-        "Quality (Non - Separation)"),
+        "Quality (Non - Separation)"
+      ),
       state = st,
       n_years = 6
     )
