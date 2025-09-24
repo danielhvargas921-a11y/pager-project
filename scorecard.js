@@ -330,12 +330,8 @@ function renderComparisonTable(containerId, tableData, baseYear) {
           ? `${row.RelativeChange > 0 ? "+" : ""}${row.RelativeChange}%`
           : "NA";
 
-      const currClass = meetsALP(row.Metric, row.Current)
-        ? "bg-success text-white"
-        : "bg-danger text-white";
-      const prevClass = meetsALP(row.Metric, row.Previous)
-        ? "bg-success text-white"
-        : "bg-danger text-white";
+      const currClass = meetsALP(row.Metric, row.Current) ? "pass" : "fail";
+      const prevClass = meetsALP(row.Metric, row.Previous) ? "pass" : "fail";
 
       return `
 <tr>
@@ -349,6 +345,10 @@ function renderComparisonTable(containerId, tableData, baseYear) {
     .join("");
 
   container.innerHTML = `
+<style>
+  .comparison-table .pass { background-color: #cdeccd  !important; }  /* very light green */
+  .comparison-table .fail { background-color: #f3c6c6  !important; }  /* very light red */
+</style>
 <div class="table-responsive">
   <table class="table table-bordered table-sm text-center align-middle comparison-table">
     <thead>
