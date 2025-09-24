@@ -548,34 +548,46 @@ function updateDashboard(baseYear, category, stateCode = "US") {
   ) {
     const timelinessData = {
       years: yearsRange,
-      series: stateData.timeliness.series.map((s) => {
+      series: [],
+    };
+
+    if (stateCode === "US") {
+      // National view: include both national lines
+      timelinessData.series = stateData.timeliness.series.map((s) => {
         const values = yearsRange.map((yr) => {
           const idx = stateData.timeliness.years.indexOf(yr);
           return idx !== -1 ? s.values[idx] : null;
         });
-        return { ...s, values };
-      }),
-    };
-
-    if (stateCode !== "US") {
+        return { ...s, values, isUS: true };
+      });
+    } else {
+      // State view: pick only one of the two series
       const isWaitingWeek = waitingWeekStates.includes(stateCode);
+      const wanted = isWaitingWeek ? "21 days" : "14 days";
 
-      // Keep only the relevant STATE line
-      timelinessData.series = timelinessData.series.filter((s) =>
-        isWaitingWeek ? s.name.includes("21 days") : s.name.includes("14 days")
+      // --- State line (green)
+      const stateSeries = stateData.timeliness.series.find((s) =>
+        s.name.includes(wanted)
       );
+      if (stateSeries) {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.timeliness.years.indexOf(yr);
+          return idx !== -1 ? stateSeries.values[idx] : null;
+        });
+        timelinessData.series.push({ ...stateSeries, values });
+      }
 
-      // Always add BOTH US lines
+      // --- US line (grey) – only matching 14 or 21
       const usData = ALLDATA["US"][baseYear].timeliness;
       if (usData) {
-        const usSeries = usData.series.map((s) => {
+        const usSeries = usData.series.find((s) => s.name.includes(wanted));
+        if (usSeries) {
           const values = yearsRange.map((yr) => {
             const idx = usData.years.indexOf(yr);
-            return idx !== -1 ? s.values[idx] : null;
+            return idx !== -1 ? usSeries.values[idx] : null;
           });
-          return { ...s, values, isUS: true };
-        });
-        timelinessData.series.push(...usSeries);
+          timelinessData.series.push({ ...usSeries, values, isUS: true });
+        }
       }
     }
 
