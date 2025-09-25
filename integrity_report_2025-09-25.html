@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>UI Overpayments Report</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+    <!-- jsPDF core -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jsPDF Autotable for vector tables -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+    <!-- svg2pdf.js for embedding SVG charts -->
+    <script src="https://unpkg.com/svg2pdf.js@2.0.0/dist/svg2pdf.umd.min.js"></script>
+    <script>
+      // Ensure svg2pdf is exposed globally no matter how the UMD bundle loads
+      window.svg2pdf =
+        window.svg2pdf ||
+        (window["svg2pdf"] && window["svg2pdf"].default) ||
+        window["svg2pdf"];
+    </script>
+
+    <style>
+/* Sidebar styling */
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background-color: #0a2239;
+  color: white;
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Main panel styling */
+#main-content {
+  margin-left: 270px;
+  padding: 20px;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Unified report container (single card) */
+#report-container {
+  margin: 0 auto 20px auto;
+  width: 95%;
+  max-width: 1100px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden; /* ensures header + section align */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 1600px) {
+  #report-container {
+    max-width: 1200px;
+  }
+}
+
+/* Page header (navy banner inside card) */
+#page-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0a2239;
+  color: #fff;
+  padding: 15px 20px;
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 0;
+}
+
+/* Export button (left side) */
+#exportPDFBtn {
+  position: absolute;
+  left: 20px;
+  background: #f8f9fa;
+  color: #0a2239;
+  font-weight: 600;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 6px 12px;
+  transition: all 0.2s;
+}
+#exportPDFBtn:hover {
+  background: #e9ecef;
+}
+
+/* Report title (always perfectly centered) */
+#reportTitle {
+  text-align: center;
+  line-height: 1.3;
+}
+#reportTitle .title-main {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+}
+#reportTitle .title-sub {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #ddd;
+  margin-top: 4px;
+}
+
+/* Toggle pill (right side) */
+#page-header .toggle-pill {
+  position: absolute;
+  right: 20px;
+  display: inline-flex;
+  border-radius: 30px;
+  background: #e9ecef;
+  padding: 4px;
+  gap: 4px;
+}
+#page-header .toggle-option {
+  border: none;
+  background: transparent;
+  padding: 6px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: #495057;
+}
+#page-header .toggle-option:hover {
+  background: #dee2e6;
+}
+#page-header .toggle-option.active {
+  background: #0a2239;
+  color: #fff;
+}
+
+/* Section (report body inside card) */
+.section {
+  padding: 20px 50px;
+  border: none;
+  border-radius: 0;
+  background: #fff;
+  margin: 0;
+}
+
+@media (max-width: 992px) {
+  .section {
+    padding: 20px;
+  }
+}
+
+.section h3 {
+  font-weight: 600;
+  color: #0a2239;
+}
+
+/* Chart containers */
+.chart-container {
+  width: 100% !important;
+  height: 340px !important;
+  margin: 0 auto 30px auto;
+  background-color: transparent;
+}
+
+.chart-small {
+  height: 300px !important;
+}
+
+/* Table styling */
+.comparison-table th {
+  background-color: #0a2239 !important;
+  color: #fff !important;
+  font-weight: 600;
+  text-align: center;
+}
+
+.comparison-table td {
+  vertical-align: middle;
+  padding: 8px;
+}
+
+.comparison-table tbody tr:nth-child(even) td {
+  background-color: #f2f6fa;
+}
+
+.comparison-table tbody tr:hover td {
+  background-color: #e6eef5;
+}
+
+.comparison-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.comparison-table td:not(:first-child) {
+  text-align: center;
+}
+
+/* Pill toggle styling (sidebar) */
+.toggle-pill {
+  display: inline-flex;
+  border-radius: 50px;
+  background: #e0e0e0;
+  padding: 3px;
+}
+
+.toggle-option {
+  border: none;
+  background: transparent;
+  padding: 6px 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: #0a2239;
+}
+
+.toggle-option:hover {
+  background: #d0d0d0;
+}
+
+.toggle-option.active {
+  background: #0a2239;
+  color: #fff;
+}
+
+/* table animations (removed for now) */
+.fade-in {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.2s forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Divider lines between figures */
+.section-break {
+  border: 0;
+  border-top: 4px solid #adb5bd;
+  margin: 1rem 0;
+}
+
+/* Side-by-side chart row styling */
+.chart-row {
+  display: flex;
+  gap: 10px;
+}
+
+.chart-row .chart-container {
+  flex: 1;
+  height: 360px !important;
+}
+
+#bump_chart_container {
+  height: 400px !important;
+}
+
+#improperfraud_chart_container {
+  height: 350px !important;
+}
+
+#timeliness_chart_container {
+  height: 450px !important;
+}
+
+/* Sidebar toggle buttons stacked vertically */
+.sidebar-mode-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-toggle-btn {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #0a1a33;
+  color: white;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #13294b;
+}
+
+.sidebar-toggle-btn.active {
+  background-color: white;
+  color: #0a1a33;
+  border-color: #0a1a33;
+}
+
+#state_selector.hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*  Export / PDF Styling */
+body.exporting #sidebar {
+  display: none !important;
+}
+
+body.exporting #main-content {
+  margin-left: 0 !important;
+  padding: 0 !important;
+  background: #fff !important;
+}
+
+body.exporting #report-container {
+  box-shadow: none !important;
+  border: none !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  background: #fff !important;
+}
+
+/* Keep header background + title */
+body.exporting #page-header {
+  background-color: #0a2239 !important;
+  color: #fff !important;
+}
+
+/* Hide only buttons in export */
+body.exporting #exportPDFBtn,
+body.exporting #page-header .toggle-pill {
+  display: none !important;
+}
+
+.chart-block h3 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-weight: 600;
+  color: #0a2239;
+}
+
+/* footer style labels */
+#sidebar-footer {
+  font-size: 15px;
+  color: #666;
+  text-align: center;
+  margin-top: 20px;
+  font-style: italic;
+}
+
+/* === OVERVIEW LAYOUT === */
+.overview-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.overview-col {
+  flex: 1 1 0;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Center chart titles + subtitles */
+.overview-col h4 {
+  text-align: center;
+  font-weight: 600;
+  color: #0a2239;
+  margin-bottom: 5px;
+}
+
+.overview-col .chart-subtitle {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #555;
+  margin-top: -2px;
+  margin-bottom: 10px;
+}
+
+/* Chart sizing */
+.overview-col .chart-container {
+  height: 320px !important;
+}
+
+.overview-col.left {
+  flex: 1.2; /* slightly bigger than right */
+}
+
+.overview-col.right {
+  flex: 1; /* default */
+}
+
+/* Placeholder boxes */
+.placeholder-box {
+  background: #f5f5f5;
+  border: 2px dashed #ccc;
+  height: 260px !important; /* slightly smaller than charts */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+  font-style: italic;
+}
+
+/* Validation table */
+.table-placeholder {
+  border: 2px solid #ccc;
+  padding: 20px;
+  text-align: center;
+  font-style: Arial;
+  color: black;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+/* Responsive stacking for mobile */
+@media (max-width: 992px) {
+  .overview-row {
+    flex-direction: column;
+  }
+}
+
+/* Intro Section */
+
+.intro-section {
+  padding: 20px 30px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.intro-title {
+  font-weight: 700;
+  color: #0a2239;
+}
+
+.intro-row {
+  display: flex;
+  align-items: stretch; /* ensures both columns are equal height */
+}
+
+.intro-col-text {
+  flex: 1.2;
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.intro-col-image {
+  flex: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.intro-col-image img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive stacking */
+@media (max-width: 992px) {
+  .intro-row {
+    flex-direction: column;
+    text-align: center;
+  }
+  .intro-col-image {
+    margin-top: 15px;
+  }
+}
+
+/* Unified card container (used for both intro + report) */
+.report-container {
+  margin: 0 auto 20px auto;
+  width: 95%;
+  max-width: 1100px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden; /* ensures header + section align */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 1600px) {
+  .report-container {
+    max-width: 1200px;
+  }
+}
+
+.intro-image {
+  display: flex;
+  justify-content: center; /* center horizontally */
+  align-items: center; /* center vertically */
+  background-color: #f1f1f1; /* light grey background */
+}
+
+.intro-col-grey {
+  background-color: #f1f1f1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%; /* make it fill the row height */
+}
+
+/* Compact Intro Overrides */
+
+#intro-container .intro-col-text,
+#intro-container p {
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
+  margin-bottom: 0.6rem !important;
+}
+
+#intro-container .intro-col-grey {
+  flex: 0.6 !important;
+  padding: 8px !important;
+}
+
+#intro-container .intro-col-grey img {
+  max-height: 140px !important;
+}
+
+#intro-container {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#intro-container .intro-row .flex-grow-1 {
+  padding: 12px 16px !important; /* instead of 20px+ */
+}
+
+#intro-container .intro-col-grey {
+  padding: 8px !important; /* shrink space around seal */
+}
+</style>
+  </head>
+  <body class="bg-light">
+    <!-- Sidebar -->
+    <div id="sidebar" class="bg-dark text-white p-3">
+      <h4 class="mb-3">U.S. Department of Labor</h4>
+
+      <!-- Mode toggle -->
+      <div class="sidebar-mode-toggle mt-3">
+        <button id="btnNational" class="sidebar-toggle-btn active">
+          National
+        </button>
+        <button id="btnState" class="sidebar-toggle-btn">State</button>
+      </div>
+
+      <div class="mt-3">
+        Last updated:
+        2025-09-25
+      </div>
+
+      <!-- Base Year -->
+      <div class="mt-3">
+        <label for="baseYearDropdown" class="form-label fw-bold"
+          >Select Base Year:</label
+        >
+        <div id="base_year_selector"></div>
+      </div>
+
+      <!-- Category -->
+      <div class="mt-3">
+        <label for="categoryDropdown" class="form-label fw-bold"
+          >Select Category:</label
+        >
+        <div id="category_selector"></div>
+      </div>
+
+      <!-- State selector -->
+      <div class="mt-3" id="state_selector">
+        <label for="stateDropdown" class="form-label fw-bold"
+          >Select State:</label
+        >
+        <select id="stateDropdown" class="form-select form-select-sm"></select>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div id="main-content" class="p-4">
+      <!-- INTRO SECTION -->
+      <div id="intro-container" class="report-container mb-4">
+        <div class="intro-row d-flex">
+          <!-- Left: text (with padding) -->
+          <div class="flex-grow-1 pe-4 col-9 p-4">
+            <h2 class="text-center mb-4">UI Performance Scorecard</h2>
+
+            <p>
+              The quarterly state UI Performs Core Measures and Integrity Score
+              Cards show states' performance relative to Acceptable Levels of
+              Performance (ALPs). These Score Cards provide a "snapshot" of the
+              performance of each state.
+            </p>
+            <p>
+              Since data can vary significantly from quarter to quarter, a
+              moving four quarters of data is used to reduce extreme outcomes on
+              a quarterly basis. Each state's progress is determined relative to
+              its baseline performance level, which is the year ending March 31.
+              The Score Cards provide on-going information on states'
+              performance and are intended to complement oversight activities.
+              In addition, because the reported integrity measures use data from
+              the Benefits Accuracy measurement (BAM) program, there is a
+              built-in delay in reporting of 90 days to allow for the most
+              complete data. In order to accommodate this distinction, integrity
+              measures are now presented separately from other core measures.
+              Please click on the links below for quarterly data on a rolling
+              basis. Integrity-only performance data begins as of March 2017 and
+              will generally post 90 days after the end of the quarter upon
+              which the report is based.
+            </p>
+          </div>
+
+          <!-- Right: seal (full grey column) -->
+          <div
+            class="intro-col-grey col-3 d-flex justify-content-center align-items-center"
+          >
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Seal_of_the_United_States_Department_of_Labor.svg"
+              alt="U.S. Department of Labor Seal"
+              class="img-fluid rounded"
+              style="max-height: 200px"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div id="report-container">
+        <!-- Header -->
+        <div
+          id="page-header"
+          class="d-flex justify-content-between align-items-center"
+        >
+          <!-- Left: Export PDF button -->
+          <button id="exportPDFBtn" class="btn btn-sm btn-light">
+            Export PDF
+          </button>
+
+          <!-- Center: Report title -->
+          <div id="reportTitle" class="text-center flex-grow-1">
+            <div class="title-main">UI Overpayments Report â€” 2025</div>
+            <div class="title-sub">(National, Program Integrity Measures)</div>
+          </div>
+
+          <!-- Right: Plots/Table toggle -->
+          <div class="toggle-pill" id="viewToggle">
+            <button class="toggle-option active" data-view="plots">
+              Plots
+            </button>
+            <button class="toggle-option" data-view="table">Table</button>
+          </div>
+        </div>
+
+        <!-- Section wrapper -->
+        <div class="section">
+          <!-- Injected sections (from R) -->
+
+          <div class="metric-section" id="section_dashboard">
+  <!-- Plots view -->
+  <div id="plots-view">
+
+    <!-- ================= OVERVIEW ================= -->
+    <div class="overview-row">
+      <!-- Left Column -->
+      <div class="overview-col left">
+
+
+        <div class="chart-block" data-category="overview">
+          <h4>Improper Payment Rate</h4>
+          <p class="chart-subtitle">Percent of overpayments classified as improper</p>
+          <div id="improper_chart_container" class="chart-container"></div>
+        </div>
+
+        <div class="chart-block" data-category="overview">
+          <h4>First Payment Timeliness</h4>
+          <p class="chart-subtitle">Percent of payments made within 14 and 21 days</p>
+          <div id="overview_timeliness" class="chart-container"></div>
+        </div>
+
+        <div class="chart-block" data-category="overview">
+          <h4>Quality Separation</h4>
+          <p class="chart-subtitle">Test Test</p>
+          <div id="overview_quality_sep" class="chart-container"></div>
+        </div>
+
+
+
+      </div>
+
+      <!-- Right Column -->
+      <div class="overview-col right">
+
+
+        <div class="chart-block" data-category="overview">
+          <h4>Fraud Rate</h4>
+          <p class="chart-subtitle">Percent of overpayments classified as improper</p>
+          <div id="fraud_chart_container" class="chart-container"></div>
+        </div>
+
+        <div class="chart-block" data-category="overview">
+          <h4>Nonmonetary Determinations</h4>
+          <p class="chart-subtitle">Percent of determinations meeting ALP (80%)</p>
+          <div id="overview_nonmonetary" class="chart-container"></div>
+        </div>
+
+        <div class="chart-block" data-category="overview">
+          <h4>Quality Non-Separation</h4>
+          <p class="chart-subtitle">Test Test</p>
+          <div id="overview_quality_nonsep" class="chart-container"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+        <div class="overview-validation chart-block mt-4" data-category="overview">
+          <h4>Data Validation Table</h4>
+          <div id="overview_validation_table" class="comparison-table"></div>
+        </div>
+
+    <!-- ================= PROGRAM ================= -->
+    <div class="chart-block" data-category="program">
+      <h3>Root Causes of Overpayments</h3>
+      <div id="pie_chart_container" class="chart-container"></div>
+    </div>
+
+    <div class="chart-block" data-category="program">
+      <h3>Top 5 Causes of Overpayment</h3>
+      <div id="bump_chart_container" class="chart-container"></div>
+    </div>
+
+    <div class="chart-block" data-category="program">
+      <h3>Improper Payment & Fraud Rates</h3>
+      <div id="improperfraud_chart_container" class="chart-container"></div>
+    </div>
+
+    <!-- ================= BENEFIT ================= -->
+    <div class="chart-block" data-category="benefit">
+      <h3>First Payment Timeliness (FPT)</h3>
+      <div id="timeliness_chart_container" class="chart-container"></div>
+    </div>
+
+    <div class="chart-block" data-category="benefit">
+      <h3>Nonmonetary Determinations</h3>
+      <div id="nonmonetary_chart_container" class="chart-container"></div>
+    </div>
+
+  </div>
+
+  <!-- Table view -->
+  <div id="table-view" style="display:none">
+    <div id="comparison_table_container"></div>
+  </div>
+</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+var ALLDATA = {"AK":{"2024":{"pie":{"Work Search":16,"Benefit Year Earnings":6.4,"Separation Issues":19.1,"Able + Available":7.9,"Employment Service Registration":13.6,"Base Period Wages":13.4,"Other Eligibility Issues":11.4,"All Other Causes":12.3},"table_program":[{"Metric":"Work Search","Current":16,"Previous":10.3,"RelativeChange":5.7},{"Metric":"Benefit Year Earnings","Current":6.4,"Previous":17.2,"RelativeChange":-10.8},{"Metric":"Separation Issues","Current":19.1,"Previous":8.5,"RelativeChange":10.6},{"Metric":"Able + Available","Current":7.9,"Previous":17.8,"RelativeChange":-9.9},{"Metric":"Employment Service Registration","Current":13.6,"Previous":5.6,"RelativeChange":8},{"Metric":"Base Period Wages","Current":13.4,"Previous":5,"RelativeChange":8.4},{"Metric":"Other Eligibility Issues","Current":11.4,"Previous":15.1,"RelativeChange":-3.7},{"Metric":"All Other Causes","Current":12.3,"Previous":20.5,"RelativeChange":-8.2}],"table_benefit":[{"Metric":"First Payment Timeliness (14 days)","Current":97,"Previous":96,"RelativeChange":1},{"Metric":"First Payment Timeliness (21 days)","Current":95,"Previous":92,"RelativeChange":3},{"Metric":"Nonmonetary Determination","Current":91.33,"Previous":86.27,"RelativeChange":5.1}],"bump":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Separation Issues","values":[10.3,17.2,9.6,9.8,8.5,19.1]},{"name":"Work Search","values":[4.6,15,10.3,4.5,10.3,16]},{"name":"Employment Service Registration","values":[14.8,9.2,13.2,17.4,5.6,13.6]},{"name":"Base Period Wages","values":[15.4,5,15.8,6.9,5,13.4]},{"name":"All Other Causes","values":[8,8.4,5.3,8.3,20.5,12.3]}]},"timeliness":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"First Payment Timeliness (14 days)","values":[97,76,82,92,96,97]},{"name":"First Payment Timeliness (21 days)","values":[94,62,77,89,92,95]}]},"improper":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Improper Payment Rate","values":[13.02,9.11,12.7,7.52,7.55,7.66]}]},"fraud":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Fraud Rate","values":["NA","NA",2.154,2.996,3.462,4.224]}]},"nonmonetary":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Nonmonetary Determination","values":[90.17,81.77,49.02,75.98,86.27,91.33]}]},"quality_sep":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Quality (Separation)","values":["NA","NA","NA","NA","NA","NA"]}]},"quality_nonsep":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Quality (Non - Separation)","values":["NA","NA","NA","NA","NA","NA"]}]}}},"AL":{"2024":{"pie":{"Work Search":20.4,"Benefit Year Earnings":15.5,"Separation Issues":10,"Able + Available":4.4,"Employment Service Registration":10.6,"Base Period Wages":9.8,"Other Eligibility Issues":18.1,"All Other Causes":11.2},"table_program":[{"Metric":"Work Search","Current":20.4,"Previous":7.2,"RelativeChange":13.2},{"Metric":"Benefit Year Earnings","Current":15.5,"Previous":5.2,"RelativeChange":10.3},{"Metric":"Separation Issues","Current":10,"Previous":12.8,"RelativeChange":-2.8},{"Metric":"Able + Available","Current":4.4,"Previous":15.8,"RelativeChange":-11.4},{"Metric":"Employment Service Registration","Current":10.6,"Previous":16.9,"RelativeChange":-6.3},{"Metric":"Base Period Wages","Current":9.8,"Previous":16.2,"RelativeChange":-6.4},{"Metric":"Other Eligibility Issues","Current":18.1,"Previous":10.6,"RelativeChange":7.5},{"Metric":"All Other Causes","Current":11.2,"Previous":15.2,"RelativeChange":-4}],"table_benefit":[{"Metric":"First Payment Timeliness (14 days)","Current":37,"Previous":46,"RelativeChange":-9},{"Metric":"First Payment Timeliness (21 days)","Current":33,"Previous":41,"RelativeChange":-8},{"Metric":"Nonmonetary Determination","Current":30.92,"Previous":51.85,"RelativeChange":-20.9}],"bump":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Work Search","values":[3.1,22.6,22.8,5.8,7.2,20.4]},{"name":"Other Eligibility Issues","values":[7.3,15.3,7.8,17.3,10.6,18.1]},{"name":"Benefit Year Earnings","values":[4.3,21.4,8.3,11.3,5.2,15.5]},{"name":"All Other Causes","values":[15.4,4.3,14.4,16.7,15.2,11.2]},{"name":"Employment Service Registration","values":[22.1,12.6,10.6,12.2,16.9,10.6]}]},"timeliness":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"First Payment Timeliness (14 days)","values":[94,89,69,42,46,37]},{"name":"First Payment Timeliness (21 days)","values":[89,82,64,37,41,33]}]},"improper":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Improper Payment Rate","values":[7.03,10.68,23.95,18.31,12.72,7.64]}]},"fraud":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Fraud Rate","values":["NA","NA",13.961,10.216,3.441,1.498]}]},"nonmonetary":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Nonmonetary Determination","values":[73.13,70.98,60.36,26.3,51.85,30.92]}]},"quality_sep":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Quality (Separation)","values":["NA","NA","NA","NA","NA","NA"]}]},"quality_nonsep":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Quality (Non - Separation)","values":["NA","NA","NA","NA","NA","NA"]}]}}},"US":{"2024":{"pie":{"Work Search":7.7,"Benefit Year Earnings":3.5,"Separation Issues":19.5,"Able + Available":21.5,"Employment Service Registration":4.3,"Base Period Wages":21.6,"Other Eligibility Issues":16.9,"All Other Causes":5},"table_program":[{"Metric":"Work Search","Current":7.7,"Previous":21.9,"RelativeChange":-14.2},{"Metric":"Benefit Year Earnings","Current":3.5,"Previous":14,"RelativeChange":-10.5},{"Metric":"Separation Issues","Current":19.5,"Previous":5.3,"RelativeChange":14.2},{"Metric":"Able + Available","Current":21.5,"Previous":6.3,"RelativeChange":15.2},{"Metric":"Employment Service Registration","Current":4.3,"Previous":4.4,"RelativeChange":-0.1},{"Metric":"Base Period Wages","Current":21.6,"Previous":13.1,"RelativeChange":8.5},{"Metric":"Other Eligibility Issues","Current":16.9,"Previous":19.8,"RelativeChange":-2.9},{"Metric":"All Other Causes","Current":5,"Previous":15.1,"RelativeChange":-10.1}],"table_benefit":[{"Metric":"First Payment Timeliness (14 days)","Current":79,"Previous":76,"RelativeChange":3},{"Metric":"First Payment Timeliness (21 days)","Current":70,"Previous":66,"RelativeChange":4},{"Metric":"Nonmonetary Determination","Current":62.72,"Previous":58.2,"RelativeChange":4.5}],"bump":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Base Period Wages","values":[15.3,24.1,15.5,7.2,13.1,21.6]},{"name":"Able + Available","values":[8.1,14.5,17.8,13.2,6.3,21.5]},{"name":"Separation Issues","values":[12.7,6.2,15.4,26.5,5.3,19.5]},{"name":"Other Eligibility Issues","values":[17.9,11.2,11.2,17.4,19.8,16.9]},{"name":"Work Search","values":[15.1,10.6,4.4,7.3,21.9,7.7]}]},"timeliness":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"First Payment Timeliness (14 days)","values":[91,80,65,64,76,79]},{"name":"First Payment Timeliness (21 days)","values":[83,69,56,56,66,70]}]},"improper":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Improper Payment Rate","values":[10.61,9.17,20.15,21.69,14.91,14.42]}]},"fraud":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Fraud Rate","values":["NA","NA","NA","NA","NA","NA"]}]},"nonmonetary":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Nonmonetary Determination","values":[76.87,67.9,45.1,48.19,58.2,62.72]}]},"quality_sep":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Quality (Separation)","values":["NA","NA","NA","NA","NA","NA"]}]},"quality_nonsep":{"years":[2019,2020,2021,2022,2023,2024],"series":[{"name":"Quality (Non - Separation)","values":["NA","NA","NA","NA","NA","NA"]}]}}}};
+</script>
+
+    <script>
+var STATE_CODES = ["AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","IA","ID","IL","IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","PR","RI","SC","SD","TN","TX","UT","VA","VI","VT","WA","WI","WV","WY"];
+</script>
+
+    <script>
+let charts = {};
+let currentBaseYear = null;
+let currentCategory = "overview"; // default category
+let currentState = "US";
+
+const metricColors = {
+  "Work Search": "#3b8ee2",
+  "Benefit Year Earnings": "#4cc74c",
+  "Separation Issues": "#f04848",
+  "Able + Available": "#ff9b1f",
+  "Employment Service Registration": "#4dd2d2",
+  "Base Period Wages": "#ffd23b",
+  "Other Eligibility Issues": "#c15fcf",
+  "All Other Causes": "#ff7b93",
+  "Improper Payment Rate": "#1f77b4",
+  "Fraud Rate": "#ff7f0e",
+  "First Payment Timeliness (14 days)": "#2a9d8f",
+  "First Payment Timeliness (21 days)": "#e76f51",
+  "Nonmonetary Determination": "#9467bd",
+};
+
+//consistent coloring
+
+const STATE_COLOR = "#2a9d8f";
+const US_COLOR = "#555";
+const ALT_COLOR = "#1f77ff";
+
+function getSeriesColor(series, chartType = "") {
+  if (series.forcedColor) return series.forcedColor;
+  if (series.isUS) return US_COLOR; // fallback grey
+  return STATE_COLOR; // green
+}
+
+const waitingWeekStates = ["CA", "VA", "WV"];
+
+// ------------------- Chart Renderers -------------------
+function renderPieChart(containerId, pieData, exportMode = false) {
+  let chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+  if (charts[containerId]) echarts.dispose(chartDom);
+  let chart = echarts.init(chartDom, null, { renderer: "svg" });
+
+  let option = {
+    animation: !exportMode,
+    tooltip: { trigger: "item", formatter: "{b}: {c}%" },
+    series: [
+      {
+        type: "pie",
+        radius: exportMode ? ["30%", "65%"] : ["35%", "75%"],
+        center: ["50%", "55%"],
+        data: pieData.map((d) => ({
+          ...d,
+          itemStyle: { color: metricColors[d.name] || "#999" },
+        })),
+        label: {
+          show: true,
+          formatter: "{b}: {c}%",
+          fontSize: exportMode ? 10 : 12,
+          color: "#000",
+          position: "outside",
+          overflow: "break",
+          alignTo: "labelLine",
+          distanceToLabelLine: 2,
+        },
+        labelLine: {
+          show: true,
+          length: exportMode ? 20 : 15,
+          length2: exportMode ? 15 : 10,
+          lineStyle: { color: "#666" },
+        },
+        avoidLabelOverlap: false,
+      },
+    ],
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+function renderBumpChart(containerId, bumpData, exportMode = false) {
+  let chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+  if (charts[containerId]) echarts.dispose(chartDom);
+  let chart = echarts.init(chartDom, null, { renderer: "svg" });
+
+  const years = bumpData.years;
+  const seriesList = bumpData.series.map((s) => ({
+    name: s.name,
+    type: "line",
+    smooth: true,
+    symbolSize: 10,
+    emphasis: { focus: "series" },
+    lineStyle: { width: 3, color: metricColors[s.name] || "#999" },
+    itemStyle: { color: metricColors[s.name] || "#999" },
+    data: s.values,
+  }));
+
+  let option = {
+    animation: !exportMode,
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
+    xAxis: { type: "category", boundaryGap: false, data: years },
+    yAxis: {
+      type: "value",
+      name: "Percent",
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: seriesList,
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+function renderTimelinessChart(containerId, data, exportMode = false) {
+  const chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+
+  if (charts[containerId]) {
+    echarts.dispose(chartDom);
+    delete charts[containerId];
+  }
+
+  const chart = echarts.init(chartDom, null, { renderer: "svg" });
+  const years = data.years;
+  const alpThreshold = 87;
+
+  const seriesList = data.series.map((s) => ({
+    name: s.name.replace("First Payment Timeliness", "FPT"),
+    type: "line",
+    smooth: true,
+    symbolSize: 8,
+    emphasis: { focus: "series" },
+    lineStyle: { width: 3, color: getSeriesColor(s, "timeliness") },
+    itemStyle: { color: getSeriesColor(s, "timeliness") },
+    data: s.values.map((v) => ({
+      value: v,
+      itemStyle: {
+        color: v >= alpThreshold ? STATE_COLOR : "#e63946",
+      },
+    })),
+  }));
+
+  const option = {
+    animation: !exportMode,
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
+    xAxis: { type: "category", boundaryGap: false, data: years },
+    yAxis: {
+      type: "value",
+      name: "Percent",
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: [
+      {
+        name: "ALP (87%)",
+        type: "line",
+        symbol: "none",
+        lineStyle: { type: "dashed", color: "red", width: 2 },
+        data: years.map(() => alpThreshold),
+      },
+      ...seriesList,
+    ],
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+function renderNonmonetaryChart(containerId, data, exportMode = false) {
+  const chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+
+  if (charts[containerId]) echarts.dispose(chartDom);
+  const chart = echarts.init(chartDom, null, { renderer: "svg" });
+
+  const years = data.years;
+  const alpThreshold = 80;
+
+  const seriesList = data.series.map((s) => ({
+    name: s.name,
+    type: "line",
+    smooth: true,
+    symbolSize: 8,
+    emphasis: { focus: "series" },
+    lineStyle: { width: 3, color: getSeriesColor(s) },
+    itemStyle: { color: getSeriesColor(s) },
+    data: s.values.map((v) => ({
+      value: v,
+      itemStyle: {
+        color: v >= alpThreshold ? STATE_COLOR : "#e63946",
+      },
+    })),
+  }));
+
+  const option = {
+    animation: !exportMode,
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
+    xAxis: { type: "category", boundaryGap: false, data: years },
+    yAxis: {
+      type: "value",
+      name: "Percent",
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: [
+      {
+        name: "ALP (80%)",
+        type: "line",
+        symbol: "none",
+        lineStyle: { type: "dashed", color: "red", width: 2 },
+        data: years.map(() => alpThreshold),
+      },
+      ...seriesList,
+    ],
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+function renderLineChart(containerId, data, options = {}, exportMode = false) {
+  const chartDom = document.getElementById(containerId);
+  if (!chartDom) return;
+
+  if (charts[containerId]) {
+    echarts.dispose(chartDom);
+    delete charts[containerId];
+  }
+
+  const chart = echarts.init(chartDom, null, { renderer: "svg" });
+  const years = data.years || [];
+  const threshold = options.threshold;
+
+  const seriesList = data.series.map((s) => ({
+    name: s.name,
+    type: "line",
+    smooth: true,
+    symbolSize: 8,
+    emphasis: { focus: "series" },
+    lineStyle: { width: 3, color: getSeriesColor(s) },
+    itemStyle: { color: getSeriesColor(s) },
+    data: s.values.map((v) => {
+      if (threshold !== undefined && v != null) {
+        return {
+          value: v,
+          itemStyle: {
+            color: v >= threshold ? STATE_COLOR : "#e63946", // green/red circles
+          },
+        };
+      }
+      return { value: v };
+    }),
+  }));
+
+  if (threshold !== undefined) {
+    seriesList.unshift({
+      name: options.thresholdLabel || `Threshold (${threshold}%)`,
+      type: "line",
+      symbol: "none",
+      lineStyle: { type: "dashed", color: "red", width: 2 },
+      data: years.map(() => threshold),
+    });
+  }
+
+  const option = {
+    animation: !exportMode,
+    tooltip: { trigger: "axis" },
+    legend: { bottom: 0 },
+    grid: { left: 50, right: 50, top: 50, bottom: 40, containLabel: true },
+    xAxis: { type: "category", boundaryGap: false, data: years },
+    yAxis: {
+      type: "value",
+      name: "Percent",
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: seriesList,
+  };
+
+  chart.setOption(option);
+  charts[containerId] = chart;
+}
+
+//comparison table
+
+// ------------------- Comparison Table -------------------
+function renderComparisonTable(containerId, tableData, baseYear) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Defensive sort: treat null/NaN as very small
+  tableData.sort((a, b) => {
+    const aVal =
+      typeof a.Current === "number" && !isNaN(a.Current)
+        ? a.Current
+        : -Infinity;
+    const bVal =
+      typeof b.Current === "number" && !isNaN(b.Current)
+        ? b.Current
+        : -Infinity;
+    return bVal - aVal;
+  });
+
+  function getThreshold(metric) {
+    if (metric.includes("Improper")) return 50;
+    if (metric.includes("Fraud")) return 50;
+    if (metric.includes("Quality Separation")) return 50;
+    if (metric.includes("Quality Non-Separation")) return 50;
+    if (metric.includes("Nonmonetary")) return 80;
+    if (metric.includes("First Payment Timeliness")) return 87;
+    return null;
+  }
+
+  function meetsALP(metric, value) {
+    if (value == null || isNaN(value)) return false;
+    const th = getThreshold(metric);
+    if (th == null) return false;
+
+    if (metric.includes("Improper") || metric.includes("Fraud")) {
+      return value <= th;
+    }
+    return value >= th;
+  }
+
+  const rows = tableData
+    .map((row) => {
+      const th = getThreshold(row.Metric);
+      const alpTxt = th ? `${th}%` : "NA";
+
+      const currTxt =
+        row.Current != null && !isNaN(row.Current) ? `${row.Current}%` : "NA";
+      const prevTxt =
+        row.Previous != null && !isNaN(row.Previous)
+          ? `${row.Previous}%`
+          : "NA";
+      const rel =
+        row.RelativeChange != null && !isNaN(row.RelativeChange)
+          ? `${row.RelativeChange > 0 ? "+" : ""}${row.RelativeChange}%`
+          : "NA";
+
+      const currClass = meetsALP(row.Metric, row.Current) ? "pass" : "fail";
+      const prevClass = meetsALP(row.Metric, row.Previous) ? "pass" : "fail";
+
+      return `
+<tr>
+  <td>${row.Metric}</td>
+  <td>${alpTxt}</td>
+  <td class="${currClass}">${currTxt}</td>
+  <td class="${prevClass}">${prevTxt}</td>
+  <td>${rel}</td>
+</tr>`;
+    })
+    .join("");
+
+  container.innerHTML = `
+<style>
+  .comparison-table .pass { background-color: #cdeccd !important; }  /* very light green */
+  .comparison-table .fail { background-color: #f3c6c6 !important; }  /* very light red */
+</style>
+<div class="table-responsive">
+  <table class="table table-bordered table-sm text-center align-middle comparison-table">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th>ALP</th>
+        <th>% of Overpayments (${baseYear} PIIA)</th>
+        <th>% of Overpayments (${baseYear - 1} PIIA)</th>
+        <th>Relative Change</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+</div>`;
+}
+
+//overview table logic
+
+function buildOverviewTableData(stateCode, baseYear) {
+  const stateData = ALLDATA[stateCode][baseYear];
+  const tableData = [];
+
+  function safeNumber(v) {
+    if (v === null || v === undefined) return null;
+    const num = Number(v);
+    return isNaN(num) ? null : num;
+  }
+
+  function addMetricRow(metricKey, label) {
+    if (!stateData[metricKey]) return;
+
+    const series = stateData[metricKey].series[0]; // state has one series
+    const idxCurr = stateData[metricKey].years.indexOf(baseYear);
+    const idxPrev = stateData[metricKey].years.indexOf(baseYear - 1);
+
+    const curr = idxCurr !== -1 ? safeNumber(series.values[idxCurr]) : null;
+    const prev = idxPrev !== -1 ? safeNumber(series.values[idxPrev]) : null;
+
+    let rel = null;
+    if (curr != null && prev != null) rel = +(curr - prev).toFixed(1);
+
+    tableData.push({
+      Metric: label,
+      Current: curr,
+      Previous: prev,
+      RelativeChange: rel,
+    });
+  }
+
+  // Core overview metrics
+  addMetricRow("improper", "Improper Payment Rate");
+  addMetricRow("fraud", "Fraud Rate");
+  addMetricRow("quality_sep", "Quality Separation");
+  addMetricRow("quality_nonsep", "Quality Non-Separation");
+  addMetricRow("nonmonetary", "Nonmonetary Determination");
+
+  // Timeliness (special case)
+  if (stateData.timeliness) {
+    if (stateCode === "US") {
+      // Add both 14 and 21 days
+      stateData.timeliness.series.forEach((s) => {
+        const idxCurr = stateData.timeliness.years.indexOf(baseYear);
+        const idxPrev = stateData.timeliness.years.indexOf(baseYear - 1);
+
+        const curr = idxCurr !== -1 ? safeNumber(s.values[idxCurr]) : null;
+        const prev = idxPrev !== -1 ? safeNumber(s.values[idxPrev]) : null;
+
+        let rel = null;
+        if (curr != null && prev != null) rel = +(curr - prev).toFixed(1);
+
+        tableData.push({
+          Metric: s.name,
+          Current: curr,
+          Previous: prev,
+          RelativeChange: rel,
+        });
+      });
+    } else {
+      const isWaitingWeek = waitingWeekStates.includes(stateCode);
+      const wanted = isWaitingWeek ? "21 days" : "14 days";
+      const s = stateData.timeliness.series.find((ss) =>
+        ss.name.includes(wanted)
+      );
+
+      if (s) {
+        const idxCurr = stateData.timeliness.years.indexOf(baseYear);
+        const idxPrev = stateData.timeliness.years.indexOf(baseYear - 1);
+
+        const curr = idxCurr !== -1 ? safeNumber(s.values[idxCurr]) : null;
+        const prev = idxPrev !== -1 ? safeNumber(s.values[idxPrev]) : null;
+
+        let rel = null;
+        if (curr != null && prev != null) rel = +(curr - prev).toFixed(1);
+
+        tableData.push({
+          Metric: s.name,
+          Current: curr,
+          Previous: prev,
+          RelativeChange: rel,
+        });
+      }
+    }
+  }
+
+  return tableData;
+}
+
+// ------------------- Selectors -------------------
+function renderBaseYearSelector(containerId, years, defaultYear) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const select = document.createElement("select");
+  select.className = "form-select form-select-sm";
+  years.forEach((y) => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    if (y == defaultYear) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  container.innerHTML = "";
+  container.appendChild(select);
+
+  select.addEventListener("change", () => {
+    currentBaseYear = parseInt(select.value, 10);
+    updateDashboard(currentBaseYear, currentCategory);
+  });
+}
+
+function renderCategorySelector(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const select = document.createElement("select");
+  select.className = "form-select form-select-sm";
+
+  [
+    { value: "overview", label: "Overview" },
+    { value: "program", label: "Program Integrity Measures" },
+    { value: "benefit", label: "Benefit Measures" },
+  ].forEach((optDef) => {
+    const opt = document.createElement("option");
+    opt.value = optDef.value;
+    opt.textContent = optDef.label;
+    if (optDef.value === currentCategory) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  container.innerHTML = "";
+  container.appendChild(select);
+
+  select.addEventListener("change", () => {
+    currentCategory = select.value;
+    updateDashboard(currentBaseYear, currentCategory);
+  });
+}
+
+function renderStateSelector(containerId, stateCodes, defaultState = "AK") {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const select = document.getElementById("stateDropdown");
+  select.innerHTML = "";
+
+  stateCodes.forEach((code) => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = code;
+    if (code === defaultState) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener("change", () => {
+    currentState = select.value;
+    updateDashboard(currentBaseYear, currentCategory, currentState);
+  });
+}
+
+// ------------------- State / National Toggle -------------------
+function setupScopeToggle() {
+  const nationalBtn = document.getElementById("btnNational");
+  const stateBtn = document.getElementById("btnState");
+  const stateSelector = document.getElementById("state_selector");
+
+  // Default = National
+  nationalBtn.classList.add("active");
+  stateBtn.classList.remove("active");
+  stateSelector.classList.add("hidden");
+
+  nationalBtn.addEventListener("click", () => {
+    nationalBtn.classList.add("active");
+    stateBtn.classList.remove("active");
+    stateSelector.classList.add("hidden");
+    currentState = "US";
+    updateDashboard(currentBaseYear, currentCategory, currentState);
+  });
+
+  stateBtn.addEventListener("click", () => {
+    stateBtn.classList.add("active");
+    nationalBtn.classList.remove("active");
+    stateSelector.classList.remove("hidden");
+    currentState = document.getElementById("stateDropdown").value;
+    updateDashboard(currentBaseYear, currentCategory, currentState);
+  });
+}
+
+// ------------------- Dashboard -------------------
+function updateDashboard(baseYear, category, stateCode = "US") {
+  if (!ALLDATA[stateCode] || !ALLDATA[stateCode][baseYear]) return;
+
+  baseYear = parseInt(baseYear, 10);
+  currentBaseYear = baseYear;
+  currentState = stateCode;
+
+  const stateData = ALLDATA[stateCode][baseYear];
+
+  // --- Handle TABLE VIEW refresh ---
+  if (document.getElementById("table-view").style.display === "block") {
+    let tableData = [];
+
+    if (category === "program") {
+      tableData = stateData.table_program || [];
+    } else if (category === "benefit") {
+      tableData = stateData.table_benefit || [];
+    } else if (category === "overview") {
+      tableData = buildOverviewTableData(stateCode, baseYear);
+    }
+
+    renderComparisonTable(
+      "comparison_table_container",
+      tableData || [],
+      baseYear
+    );
+    return; // Ã¢Å“â€¦ donÃ¢â‚¬â„¢t render plots while in table view
+  }
+
+  // --- Title ---
+  const catLabel =
+    category === "program"
+      ? "Program Integrity Measures"
+      : category === "benefit"
+      ? "Benefit Measures"
+      : "Overview";
+  const stateLabel = stateCode === "US" ? "National" : stateCode;
+
+  document.getElementById("reportTitle").innerHTML = `
+    <div class="title-main">UI Overpayments Report &mdash; ${baseYear}</div>
+    <div class="title-sub">(${stateLabel}, ${catLabel})</div>
+  `;
+
+  // --- Show correct section ---
+  document
+    .querySelectorAll(".metric-section")
+    .forEach((s) => (s.style.display = "none"));
+  document.getElementById("section_dashboard").style.display = "block";
+
+  // --- Chart visibility ---
+  document
+    .querySelectorAll(".chart-block")
+    .forEach((b) => (b.style.display = "none"));
+  document
+    .querySelectorAll(`.chart-block[data-category='${category}']`)
+    .forEach((b) => (b.style.display = "block"));
+
+  // --- Years range ---
+  const yearsRange = [];
+  for (let y = baseYear - 5; y <= baseYear; y++) yearsRange.push(y);
+
+  // --- Program Pie ---
+  if (category === "program" && stateData.pie) {
+    const pieData = Object.entries(stateData.pie || {}).map(
+      ([name, value]) => ({ name, value })
+    );
+    renderPieChart("pie_chart_container", pieData);
+  }
+
+  // --- Program Bump ---
+  if (category === "program" && stateData.bump) {
+    const bumpData = {
+      years: yearsRange,
+      series: stateData.bump.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.bump.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      }),
+    };
+    renderBumpChart("bump_chart_container", bumpData);
+  }
+
+  // --- Timeliness ---
+  if (
+    (category === "benefit" || category === "overview") &&
+    stateData.timeliness
+  ) {
+    const timelinessData = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      // National view Ã¢â€ â€™ keep metric names in legend
+      stateData.timeliness.series.forEach((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.timeliness.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        let color = US_COLOR;
+        if (s.name.includes("21")) color = ALT_COLOR; // blue
+        timelinessData.series.push({
+          ...s,
+          values,
+          isUS: true,
+          forcedColor: color,
+        });
+      });
+    } else {
+      const isWaitingWeek = waitingWeekStates.includes(stateCode);
+      const wanted = isWaitingWeek ? "21 days" : "14 days";
+
+      // State line (green)
+      const stateSeries = stateData.timeliness.series.find((s) =>
+        s.name.includes(wanted)
+      );
+      if (stateSeries) {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.timeliness.years.indexOf(yr);
+          return idx !== -1 ? stateSeries.values[idx] : null;
+        });
+        timelinessData.series.push({ ...stateSeries, values });
+      }
+
+      // US comparison line (grey) Ã¢â‚¬â€œ labeled "US"
+      const usData = ALLDATA["US"][baseYear].timeliness;
+      if (usData) {
+        const usSeries = usData.series.find((s) => s.name.includes(wanted));
+        if (usSeries) {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? usSeries.values[idx] : null;
+          });
+          timelinessData.series.push({
+            ...usSeries,
+            values,
+            name: "US", // override legend label
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
+        }
+      }
+    }
+
+    renderTimelinessChart(
+      category === "overview"
+        ? "overview_timeliness"
+        : "timeliness_chart_container",
+      timelinessData
+    );
+  }
+
+  // --- Nonmonetary ---
+  if (
+    (category === "benefit" || category === "overview") &&
+    stateData.nonmonetary
+  ) {
+    const nonmonetaryData = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      nonmonetaryData.series = stateData.nonmonetary.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.nonmonetary.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      nonmonetaryData.series = stateData.nonmonetary.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.nonmonetary.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      });
+
+      const usData = ALLDATA["US"][baseYear].nonmonetary;
+      if (usData) {
+        usData.series.forEach((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          nonmonetaryData.series.push({
+            ...s,
+            values,
+            name: "US", // override legend label
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
+        });
+      }
+    }
+
+    renderNonmonetaryChart(
+      category === "overview"
+        ? "overview_nonmonetary"
+        : "nonmonetary_chart_container",
+      nonmonetaryData
+    );
+  }
+
+  // --- Improper ---
+  if (category === "overview" && stateData.improper) {
+    const improper_data = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      improper_data.series = stateData.improper.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.improper.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      improper_data.series = stateData.improper.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.improper.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      });
+
+      const usData = ALLDATA["US"][baseYear].improper;
+      if (usData) {
+        usData.series.forEach((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          improper_data.series.push({
+            ...s,
+            values,
+            name: "US", // override legend label
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
+        });
+      }
+    }
+
+    renderLineChart("improper_chart_container", improper_data, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
+  }
+
+  // --- Fraud ---
+  if (category === "overview" && stateData.fraud) {
+    const fraud_data = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      fraud_data.series = stateData.fraud.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.fraud.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      fraud_data.series = stateData.fraud.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.fraud.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      });
+
+      const usData = ALLDATA["US"][baseYear].fraud;
+      if (usData) {
+        usData.series.forEach((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          fraud_data.series.push({
+            ...s,
+            values,
+            name: "US", // override legend label
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
+        });
+      }
+    }
+
+    renderLineChart("fraud_chart_container", fraud_data, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
+  }
+
+  // --- Quality separation ---
+  if (category === "overview" && stateData.quality_sep) {
+    const qualitysep_data = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      qualitysep_data.series = stateData.quality_sep.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.quality_sep.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      qualitysep_data.series = stateData.quality_sep.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.quality_sep.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      });
+
+      const usData = ALLDATA["US"][baseYear].quality_sep;
+      if (usData) {
+        usData.series.forEach((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          qualitysep_data.series.push({
+            ...s,
+            values,
+            name: "US", // override legend label
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
+        });
+      }
+    }
+
+    renderLineChart("overview_quality_sep", qualitysep_data, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
+  }
+
+  // --- Quality non-separation ---
+  if (category === "overview" && stateData.quality_nonsep) {
+    const qualitynonsep_data = { years: yearsRange, series: [] };
+
+    if (stateCode === "US") {
+      qualitynonsep_data.series = stateData.quality_nonsep.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.quality_nonsep.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values, isUS: true, forcedColor: US_COLOR };
+      });
+    } else {
+      qualitynonsep_data.series = stateData.quality_nonsep.series.map((s) => {
+        const values = yearsRange.map((yr) => {
+          const idx = stateData.quality_nonsep.years.indexOf(yr);
+          return idx !== -1 ? s.values[idx] : null;
+        });
+        return { ...s, values };
+      });
+
+      const usData = ALLDATA["US"][baseYear].quality_nonsep;
+      if (usData) {
+        usData.series.forEach((s) => {
+          const values = yearsRange.map((yr) => {
+            const idx = usData.years.indexOf(yr);
+            return idx !== -1 ? s.values[idx] : null;
+          });
+          qualitynonsep_data.series.push({
+            ...s,
+            values,
+            name: "US", // override legend label
+            isUS: true,
+            forcedColor: US_COLOR,
+          });
+        });
+      }
+    }
+
+    renderLineChart("overview_quality_nonsep", qualitynonsep_data, {
+      threshold: 50,
+      thresholdLabel: "Target (50%)",
+    });
+  }
+}
+
+// ------------------- Switch View -------------------
+function switchView(view) {
+  if (!currentBaseYear || !currentState) return;
+
+  if (view === "plots") {
+    document.getElementById("plots-view").style.display = "block";
+    document.getElementById("table-view").style.display = "none";
+    updateDashboard(currentBaseYear, currentCategory, currentState);
+    setTimeout(() => Object.values(charts).forEach((c) => c.resize()), 50);
+  } else {
+    document.getElementById("plots-view").style.display = "none";
+    document.getElementById("table-view").style.display = "block";
+
+    const stateData = ALLDATA[currentState][currentBaseYear];
+    let tableData = [];
+
+    if (currentCategory === "program") {
+      tableData = stateData.table_program || [];
+    } else if (currentCategory === "benefit") {
+      tableData = stateData.table_benefit || [];
+    } else if (currentCategory === "overview") {
+      tableData = buildOverviewTableData(currentState, currentBaseYear);
+    }
+
+    renderComparisonTable(
+      "comparison_table_container",
+      tableData || [],
+      currentBaseYear
+    );
+  }
+}
+
+// ------------------- Init -------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const years = Object.keys(ALLDATA["US"])
+    .map((y) => parseInt(y))
+    .sort((a, b) => b - a);
+  const defaultYear = years[0];
+
+  renderBaseYearSelector("base_year_selector", years, defaultYear);
+  renderCategorySelector("category_selector");
+  renderStateSelector("state_selector", STATE_CODES, "US");
+  setupScopeToggle();
+
+  updateDashboard(defaultYear, currentCategory, currentState);
+
+  const toggle = document.getElementById("viewToggle");
+  toggle.addEventListener("click", (e) => {
+    if (e.target.classList.contains("toggle-option")) {
+      document
+        .querySelectorAll(".toggle-option")
+        .forEach((btn) => btn.classList.remove("active"));
+      e.target.classList.add("active");
+      switchView(e.target.getAttribute("data-view"));
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    Object.values(charts).forEach((c) => c.resize());
+  });
+});
+
+// ------------------- Export PDF -------------------
+async function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p", "mm", "a4");
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  console.log("Export button clicked");
+
+  const titleMain =
+    document.querySelector("#reportTitle .title-main")?.innerText ||
+    "UI Overpayments Report";
+  const titleSub =
+    document.querySelector("#reportTitle .title-sub")?.innerText || "";
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(18);
+  pdf.text(titleMain, pageWidth / 2, pageHeight / 2 - 10, { align: "center" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(14);
+  pdf.text(titleSub, pageWidth / 2, pageHeight / 2 + 5, { align: "center" });
+
+  pdf.addPage();
+
+  const exportDiv = document.createElement("div");
+  exportDiv.style.position = "absolute";
+  exportDiv.style.left = "-9999px";
+  document.body.appendChild(exportDiv);
+
+  const stateData = ALLDATA[currentState][currentBaseYear];
+  let yOffset = 30;
+
+  // (Rendering program, benefit, overview sections into PDF ... unchanged from your current code)
+
+  document.body.removeChild(exportDiv);
+
+  const tableEl = document.querySelector("#comparison_table_container table");
+  if (tableEl) {
+    pdf.addPage();
+    pdf.autoTable({
+      html: tableEl,
+      theme: "grid",
+      headStyles: { fillColor: [10, 34, 57] },
+      margin: { top: 20 },
+    });
+  }
+
+  pdf.save("UI_Overpayments_Report.pdf");
+}
+
+// ------------------- Helper -------------------
+async function renderChartToPDF(
+  pdf,
+  exportDiv,
+  containerId,
+  renderer,
+  data,
+  pageWidth,
+  pageHeight,
+  yOffset,
+  width,
+  height
+) {
+  const container = document.createElement("div");
+  container.style.width = `${width}px`;
+  container.style.height = `${height}px`;
+  container.id = containerId;
+  exportDiv.appendChild(container);
+
+  renderer(container.id, data, true);
+
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  const svgEl = container.querySelector("svg");
+  if (!svgEl) return yOffset;
+
+  svgEl.removeAttribute("style");
+  const w = svgEl.getAttribute("width") || width;
+  const h = svgEl.getAttribute("height") || height;
+  svgEl.setAttribute("viewBox", `0 0 ${w} ${h}`);
+
+  const aspectRatio = w / h;
+  let drawW = pageWidth - 40;
+  let drawH = drawW / aspectRatio;
+
+  if (yOffset + drawH > pageHeight - 20) {
+    pdf.addPage();
+    yOffset = 30;
+  }
+
+  await window.svg2pdf.svg2pdf(svgEl, pdf, {
+    x: (pageWidth - drawW) / 2,
+    y: yOffset,
+    width: drawW,
+    height: drawH,
+  });
+
+  return yOffset + drawH + 20;
+}
+
+// ------------------- Hook Export Button -------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("exportPDFBtn");
+  if (btn) {
+    console.log("Attaching click handler to Export PDF button");
+    btn.addEventListener("click", exportToPDF);
+  }
+});
+</script>
+  </body>
+</html>

@@ -335,11 +335,13 @@ body.exporting #page-header .toggle-pill {
 .overview-row {
   display: flex;
   gap: 20px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
 }
 
 .overview-col {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   gap: 20px;

@@ -10,7 +10,7 @@ library(lubridate)
 
 # hardcoded variables
 year_range <- "Jul-Jun"
-base_path <- "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
+base_path <- "C:/Users/Vargas.Daniel.H/Desktop/SCORE CARD PROJECT/main/scorecard/pager-project"
 
 # "C:/Users/Daniel/Desktop/Main Projcets/git/pager-project"
 
@@ -315,7 +315,7 @@ section_html <- glue('
         </div>
 
         <div class="chart-block" data-category="overview">
-          <h4>Quality Saparation</h4>
+          <h4>Quality Separation</h4>
           <p class="chart-subtitle">Test Test</p>
           <div id="overview_quality_sep" class="chart-container"></div>
         </div>
