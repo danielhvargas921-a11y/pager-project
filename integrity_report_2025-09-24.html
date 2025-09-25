@@ -447,7 +447,7 @@ body.exporting #page-header .toggle-pill {
 
 .intro-row {
   display: flex;
-  align-items: stretch; /* makes both columns the same height */
+  align-items: stretch; /* ensures both columns are equal height */
 }
 
 .intro-col-text {
@@ -506,10 +506,42 @@ body.exporting #page-header .toggle-pill {
 }
 
 .intro-col-grey {
-  background-color: #f1f1f1; /* full grey background */
+  background-color: #f1f1f1;
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 100%; /* make it fill the row height */
+}
+
+/* Compact Intro Overrides */
+
+#intro-container .intro-col-text,
+#intro-container p {
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
+  margin-bottom: 0.6rem !important;
+}
+
+#intro-container .intro-col-grey {
+  flex: 0.6 !important;
+  padding: 8px !important;
+}
+
+#intro-container .intro-col-grey img {
+  max-height: 140px !important;
+}
+
+#intro-container {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+#intro-container .intro-row .flex-grow-1 {
+  padding: 12px 16px !important; /* instead of 20px+ */
+}
+
+#intro-container .intro-col-grey {
+  padding: 8px !important; /* shrink space around seal */
 }
 </style>
   </head>
