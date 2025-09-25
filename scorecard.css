@@ -406,115 +406,61 @@ body.exporting #page-header .toggle-pill {
   }
 }
 
-/* Intro Section */
-
-.intro-section {
-  padding: 20px 30px;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.intro-title {
-  font-weight: 700;
-  color: #0a2239;
-}
-
-.intro-row {
-  display: flex;
-  align-items: stretch; /* ensures both columns are equal height */
-}
-
-.intro-col-text {
-  flex: 1.2;
-  font-size: 0.95rem;
-  color: #333;
-  line-height: 1.5;
-}
-
-.intro-col-image {
-  flex: 0.8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.intro-col-image img {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Responsive stacking */
-@media (max-width: 992px) {
-  .intro-row {
-    flex-direction: column;
-    text-align: center;
-  }
-  .intro-col-image {
-    margin-top: 15px;
-  }
-}
-
-/* Unified card container (used for both intro + report) */
-.report-container {
+/* ===== Redesigned Intro Section ===== */
+#intro-container {
   margin: 0 auto 20px auto;
   width: 95%;
   max-width: 1100px;
   border: 1px solid #dee2e6;
   border-radius: 8px;
   background: #fff;
-  overflow: hidden; /* ensures header + section align */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
-@media (min-width: 1600px) {
-  .report-container {
-    max-width: 1200px;
-  }
-}
-
-.intro-image {
-  display: flex;
-  justify-content: center; /* center horizontally */
-  align-items: center; /* center vertically */
-  background-color: #f1f1f1; /* light grey background */
-}
-
-.intro-col-grey {
-  background-color: #f1f1f1;
+/* Header row (navy bar, same as report header) */
+#intro-container .intro-header {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100%; /* make it fill the row height */
+  gap: 12px;
+  background-color: #0a2239;
+  color: #fff;
+  padding: 12px 20px;
 }
 
-/* Compact Intro Overrides */
-
-#intro-container .intro-col-text,
-#intro-container p {
-  font-size: 0.9rem !important;
-  line-height: 1.4 !important;
-  margin-bottom: 0.6rem !important;
+#intro-container .intro-title {
+  font-size: 1.6rem; /* matches report header main */
+  font-weight: 700;
+  margin: 0;
+  color: #fff;
 }
 
-#intro-container .intro-col-grey {
-  flex: 0.6 !important;
-  padding: 8px !important;
+#intro-container .intro-seal {
+  max-height: 42px;
+  width: auto;
 }
 
-#intro-container .intro-col-grey img {
-  max-height: 140px !important;
+/* Body text */
+#intro-container .intro-text {
+  padding: 18px 28px;
+  background: #fff;
+  color: #333;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
-#intro-container {
-  max-height: 300px;
-  overflow-y: auto;
+#intro-container .intro-text p {
+  margin-bottom: 0.8rem;
 }
 
-#intro-container .intro-row .flex-grow-1 {
-  padding: 12px 16px !important; /* instead of 20px+ */
-}
-
-#intro-container .intro-col-grey {
-  padding: 8px !important; /* shrink space around seal */
+/* Responsive */
+@media (max-width: 768px) {
+  #intro-container .intro-header {
+    flex-direction: column;
+  }
+  #intro-container .intro-seal {
+    max-height: 38px;
+    margin-top: 6px;
+  }
 }
